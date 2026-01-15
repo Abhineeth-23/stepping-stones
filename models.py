@@ -8,6 +8,13 @@ db = SQLAlchemy()
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
+    
+    # --- NEW FIELDS ---
+    email = db.Column(db.String(150), unique=True, nullable=False)
+    name = db.Column(db.String(150), nullable=False)
+    dob = db.Column(db.Date, nullable=True)
+    # ------------------
+    
     password = db.Column(db.String(150), nullable=False)
     is_dark_mode = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -25,7 +32,6 @@ class User(UserMixin, db.Model):
     steps = db.relationship('Step', backref='user', lazy=True)
     global_journals = db.relationship('GlobalJournal', backref='user', lazy=True)
     step_logs = db.relationship('StepLog', backref='user', lazy=True)
-    # NEW: Custom Dates
     custom_rest_days = db.relationship('CustomRestDay', backref='user', lazy=True)
 
 class Step(db.Model):
@@ -50,7 +56,6 @@ class CustomRestDay(db.Model):
     reason = db.Column(db.String(200), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
-# ... (Keep StepLog, GlobalJournal, SubTask exactly as they were in previous code) ...
 class StepLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)

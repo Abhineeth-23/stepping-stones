@@ -27,7 +27,12 @@
                 + New Goal
             </button>
             <button onclick="toggleTheme()" class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700">🌗</button>
-            <a href="{{ url_for('logout') }}" class="text-red-500 text-sm">Logout</a>
+            
+            <a href="{{ url_for('profile') }}" class="text-gray-600 dark:text-gray-300 font-bold hover:text-blue-500 text-sm">
+                👤 {{ current_user.username }}
+            </a>
+            
+            <a href="{{ url_for('logout') }}" class="text-red-500 text-sm hover:underline">Logout</a>
         </div>
     </nav>
 

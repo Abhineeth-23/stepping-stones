@@ -28,6 +28,23 @@ def inject_today():
 # ==========================================
 #              HELPER FUNCTIONS
 # ==========================================
+def get_next_birthday(dob):
+    today = date.today()
+    # Try to put birthday in current year
+    try:
+        this_year_bday = date(today.year, dob.month, dob.day)
+    except ValueError:
+        # Handle Leap Year babies (Feb 29) -> Feb 28
+        this_year_bday = date(today.year, 2, 28)
+
+    if this_year_bday >= today:
+        return this_year_bday
+    else:
+        # If birthday passed, return next year
+        try:
+            return date(today.year + 1, dob.month, dob.day)
+        except ValueError:
+            return date(today.year + 1, 2, 28)
 
 def get_heatmap_data(user):
     """
@@ -520,6 +537,56 @@ def toggle_theme():
     db.session.commit()
     return jsonify({'dark_mode': current_user.is_dark_mode})
 
+# --- USER PROFILE & ACCOUNT MANAGEMENT ---
+
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html', user=current_user)
+
+@app.route('/update_password', methods=['POST'])
+@login_required
+def update_password():
+    current_pw = request.form.get('current_password')
+    new_pw = request.form.get('new_password')
+    
+    if not check_password_hash(current_user.password, current_pw):
+        flash("Current password incorrect.", "error")
+        return redirect(url_for('profile'))
+        
+    current_user.password = generate_password_hash(new_pw)
+    db.session.commit()
+    flash("Password updated successfully.", "success")
+    return redirect(url_for('profile'))
+
+@app.route('/delete_account', methods=['POST'])
+@login_required
+def delete_account():
+    confirmation = request.form.get('confirmation')
+    
+    if confirmation == current_user.username:
+        user = User.query.get(current_user.id)
+        
+        # Delete all associated data manually (Cascade usually handles this, but good to be safe)
+        StepLog.query.filter_by(user_id=user.id).delete()
+        GlobalJournal.query.filter_by(user_id=user.id).delete()
+        CustomRestDay.query.filter_by(user_id=user.id).delete()
+        
+        steps = Step.query.filter_by(user_id=user.id).all()
+        for s in steps:
+            SubTask.query.filter_by(step_id=s.id).delete()
+            db.session.delete(s)
+            
+        db.session.delete(user)
+        db.session.commit()
+        
+        logout_user()
+        flash("Your account has been deleted. We're sad to see you go.", "info")
+        return redirect(url_for('login'))
+    else:
+        flash("Username confirmation did not match.", "error")
+        return redirect(url_for('profile'))
+
 # ==========================================
 #             AUTHENTICATION
 # ==========================================
@@ -543,18 +610,48 @@ def login():
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
+        email = request.form.get('email')
+        name = request.form.get('name')
         password = request.form.get('password')
+        dob_str = request.form.get('dob') # "2006-04-23"
         
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'error')
+        # Check Username/Email
+        if User.query.filter((User.username==username) | (User.email==email)).first():
+            flash('Username or Email already taken.', 'error')
         else:
             hashed_pw = generate_password_hash(password)
-            new_user = User(username=username, password=hashed_pw, is_dark_mode=True)
-            db.session.add(new_user)
-            db.session.commit()
             
-            flash('Account created! Please login.', 'success')
+            # Parse Date of Birth
+            dob_date = None
+            if dob_str:
+                dob_date = datetime.strptime(dob_str, '%Y-%m-%d').date()
+
+            new_user = User(
+                username=username, 
+                email=email,
+                name=name,
+                dob=dob_date,
+                password=hashed_pw, 
+                is_dark_mode=True
+            )
+            db.session.add(new_user)
+            db.session.flush() # Flush to get new_user.id before committing relationships
+
+            # AUTOMATION: Create Birthday Rest Day
+            if dob_date:
+                next_bday = get_next_birthday(dob_date)
+                # Create the rest day entry
+                bday_rest = CustomRestDay(
+                    date=next_bday,
+                    reason=f"🎉 {name}'s Birthday!",
+                    user_id=new_user.id
+                )
+                db.session.add(bday_rest)
+
+            db.session.commit()
+            flash('Account created! Birthday rest day assigned. 🎂', 'success')
             return redirect(url_for('login'))
+            
     return render_template('register.html')
 
 @app.route('/logout')
@@ -562,6 +659,31 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+@app.route('/update_profile', methods=['POST'])
+@login_required
+def update_profile():
+    # Get Data
+    new_name = request.form.get('name')
+    new_email = request.form.get('email')
+    new_dob_str = request.form.get('dob')
+    
+    # Check if email is taken by someone else
+    existing_email = User.query.filter_by(email=new_email).first()
+    if existing_email and existing_email.id != current_user.id:
+        flash("Email already in use.", "error")
+        return redirect(url_for('profile'))
+
+    # Update Fields
+    current_user.name = new_name
+    current_user.email = new_email
+    
+    if new_dob_str:
+        current_user.dob = datetime.strptime(new_dob_str, '%Y-%m-%d').date()
+    
+    db.session.commit()
+    flash("Profile details updated.", "success")
+    return redirect(url_for('profile'))
 
 # ==========================================
 #              MAIN EXECUTION
