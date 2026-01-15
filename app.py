@@ -239,6 +239,7 @@ def view_shared_step(token):
     
     return render_template('shared_step.html', step=step, history=history)
 
+
 @app.route('/calendar')
 @login_required
 def calendar_view():
@@ -256,6 +257,10 @@ def calendar_view():
         logs_by_date[d_str].append(log)
         
     return render_template('calendar_view.html', logs_by_date=logs_by_date)
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 # ==========================================
 #          STANDARD STEP ROUTES

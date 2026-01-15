@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-12 pb-12">
+
+    <div class="text-center py-10">
+        <h1 class="text-5xl font-black text-gray-800 dark:text-white mb-4">How it Works</h1>
+        <p class="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+            Stepping Stones is not just a to-do list. It's a momentum builder designed to help you balance consistency with mental health.
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow border-t-4 border-blue-500">
+            <div class="text-4xl mb-2">🎯</div>
+            <h3 class="font-bold dark:text-white">1. Define</h3>
+            <p class="text-sm text-gray-500">Create a goal. Choose Weekly, Monthly, or Yearly deadlines.</p>
+        </div>
+        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow border-t-4 border-indigo-500">
+            <div class="text-4xl mb-2">🧱</div>
+            <h3 class="font-bold dark:text-white">2. Break Down</h3>
+            <p class="text-sm text-gray-500">Add sub-tasks. Big goals are just piles of small stones.</p>
+        </div>
+        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow border-t-4 border-orange-500">
+            <div class="text-4xl mb-2">🔥</div>
+            <h3 class="font-bold dark:text-white">3. Act & Log</h3>
+            <p class="text-sm text-gray-500">Use the Focus Timer. Log your work to paint your Heatmap orange.</p>
+        </div>
+        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow border-t-4 border-purple-500">
+            <div class="text-4xl mb-2">🌴</div>
+            <h3 class="font-bold dark:text-white">4. Rest</h3>
+            <p class="text-sm text-gray-500">Take scheduled breaks without breaking your streak.</p>
+        </div>
+    </div>
+
+    <hr class="dark:border-gray-700">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+        
+        <div class="space-y-8">
+            <div>
+                <h2 class="text-2xl font-bold dark:text-white mb-2 flex items-center gap-2">
+                    ⏱️ Smart Deadlines
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Most apps just give you a date. We give you logic:
+                </p>
+                <ul class="list-disc list-inside mt-2 text-gray-500 text-sm space-y-1">
+                    <li><strong>Rolling:</strong> Deadline is calculated 7/30/365 days from <em>start</em>.</li>
+                    <li><strong>Calendar:</strong> Deadline snaps to the end of the current Week/Month/Year.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold dark:text-white mb-2 flex items-center gap-2">
+                    🛡️ Streak Protection
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Life happens. We built a system that forgives you:
+                </p>
+                <ul class="list-disc list-inside mt-2 text-gray-500 text-sm space-y-1">
+                    <li><strong>Freezes (🧊):</strong> Automatically used if you miss a day.</li>
+                    <li><strong>Weekly Rest:</strong> Set Sat/Sun as off-days.</li>
+                    <li><strong>Custom Rest:</strong> Mark birthdays or holidays in advance.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold dark:text-white mb-2 flex items-center gap-2">
+                    🍅 Deep Focus
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Built-in Pomodoro timer. Whether you need 15 minutes or 90, the timer keeps you zoned in. Finishing a timer automatically creates a log entry.
+                </p>
+            </div>
+        </div>
+
+        <div class="space-y-8">
+            <div>
+                <h2 class="text-2xl font-bold dark:text-white mb-2 flex items-center gap-2">
+                    🗺️ The Heatmap
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Visual proof of your consistency. Inspired by GitHub.
+                </p>
+                <div class="flex gap-4 mt-2 text-sm">
+                    <span class="flex items-center gap-1"><div class="w-3 h-3 bg-gray-200 rounded"></div> Nothing</span>
+                    <span class="flex items-center gap-1"><div class="w-3 h-3 bg-orange-400 rounded"></div> Work</span>
+                    <span class="flex items-center gap-1"><div class="w-3 h-3 bg-purple-400 rounded"></div> Rest</span>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold dark:text-white mb-2 flex items-center gap-2">
+                    📓 Zen Journaling
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Clicking the journal box enters <strong>Zen Mode</strong>—distractions fade away. Use the <strong>"✨ Prompt"</strong> button if you have writer's block.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold dark:text-white mb-2 flex items-center gap-2">
+                    🔗 Accountability
+                </h2>
+                <p class="text-gray-600 dark:text-gray-300">
+                    Need a friend to watch your back? Click <strong>Share</strong> on any goal to generate a public, read-only link. They can see your progress, but can't edit it.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-blue-50 dark:bg-blue-900/20 p-8 rounded-2xl text-center mt-12 border border-blue-100 dark:border-blue-800">
+        <h2 class="text-2xl font-bold dark:text-white mb-4">Ready to take the next step?</h2>
+        <a href="{{ url_for('dashboard') }}" class="bg-blue-600 text-white px-8 py-3 rounded-full font-bold hover:bg-blue-700 shadow-lg transition transform hover:scale-105 inline-block">
+            Go to Dashboard
+        </a>
+    </div>
+
+</div>
+{% endblock %}
