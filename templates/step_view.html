@@ -15,45 +15,33 @@
     </div>
     
     <div class="flex gap-2 mt-4 md:mt-0">
-        <button onclick="openTimer()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 flex items-center gap-2 shadow-lg transition transform hover:scale-105">
+        <button onclick="shareStep({{ step.id }})" class="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700 flex items-center gap-2 shadow-lg">
+            <span>🔗 Share</span>
+        </button>
+        <button onclick="openTimer()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 flex items-center gap-2 shadow-lg">
             <span>⏱️ Focus</span>
         </button>
-        
         <button onclick="openEditModal()" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-            ⚙️ Settings
+            ⚙️
         </button>
-        
         <a href="{{ url_for('dashboard') }}" class="text-blue-500 hover:underline text-sm flex items-center px-2">Back</a>
     </div>
 </div>
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 h-fit min-h-[60vh]">
-    
     <div class="md:col-span-1 bg-white dark:bg-gray-800 p-6 rounded shadow border dark:border-gray-700">
-        <h2 class="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            ✅ Sub-Steps
-        </h2>
-        
+        <h2 class="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">✅ Sub-Steps</h2>
         <div class="space-y-3 mb-4">
             {% for sub in step.subtasks %}
             <div class="flex items-start gap-3 group">
-                <input type="checkbox" onchange="toggleSubtask(this, {{ sub.id }})" 
-                       class="mt-1 w-4 h-4 text-blue-600 rounded cursor-pointer" 
-                       {% if sub.is_completed %}checked{% endif %}>
-                
-                <div class="flex-1">
-                    <span class="text-sm dark:text-gray-200 {{ 'line-through text-gray-400' if sub.is_completed else '' }}" id="text-{{ sub.id }}">
-                        {{ sub.text }}
-                    </span>
-                </div>
-                
+                <input type="checkbox" onchange="toggleSubtask(this, {{ sub.id }})" class="mt-1 w-4 h-4 text-blue-600 rounded cursor-pointer" {% if sub.is_completed %}checked{% endif %}>
+                <span class="flex-1 text-sm dark:text-gray-200 {{ 'line-through text-gray-400' if sub.is_completed else '' }}" id="text-{{ sub.id }}">{{ sub.text }}</span>
                 <a href="{{ url_for('delete_subtask', subtask_id=sub.id) }}" class="text-xs text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">✕</a>
             </div>
             {% else %}
-            <p class="text-xs text-gray-400 italic">No subtasks yet. Break it down!</p>
+            <p class="text-xs text-gray-400 italic">No subtasks yet.</p>
             {% endfor %}
         </div>
-
         <form action="{{ url_for('add_subtask', step_id=step.id) }}" method="POST" class="flex gap-2 mt-auto">
             <input type="text" name="subtask_text" placeholder="Add small step..." class="flex-1 border dark:border-gray-600 p-2 text-sm rounded dark:bg-gray-700 dark:text-white" required>
             <button class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 px-3 rounded text-lg font-bold text-blue-500">+</button>
@@ -61,28 +49,18 @@
     </div>
 
     <div class="md:col-span-2 grid grid-cols-1 gap-6">
-        
         <div class="bg-blue-50 dark:bg-blue-900/20 p-6 rounded shadow flex flex-col border border-blue-200 dark:border-blue-700/50">
-            <h2 class="font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">
-                📝 Today's Log
-            </h2>
-            
+            <h2 class="font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">📝 Today's Log</h2>
             <form action="" method="POST" id="log-container" class="flex-1 flex flex-col mb-4" onclick="enableZen('log-container')">
                 <textarea id="log-textarea" name="log_content" class="flex-1 w-full bg-white/50 dark:bg-gray-900/50 border border-blue-200 dark:border-blue-800 p-4 rounded resize-none focus:outline-none dark:text-gray-200" placeholder="What did you do today?">{{ todays_log.content if todays_log else '' }}</textarea>
-                <button class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                    {{ 'Update Log' if todays_log else 'Log & Boost Streak 🚀' }}
-                </button>
+                <button class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">{{ 'Update Log' if todays_log else 'Log & Boost Streak 🚀' }}</button>
                 <button type="button" onclick="disableZen(event, 'log-container')" class="zen-overlay-btn bg-white text-black px-6 py-2 rounded-full font-bold shadow-lg">Done</button>
             </form>
-
             <div class="max-h-40 overflow-y-auto border-t dark:border-gray-700 pt-2">
                 <h4 class="text-xs font-bold text-gray-500 mb-2">HISTORY</h4>
                 {% for log in history %}
                     {% if log.date != todays_log.date %}
-                    <div class="bg-white dark:bg-gray-800 p-3 rounded mb-2 text-sm dark:text-gray-300 shadow-sm">
-                        <span class="text-xs text-gray-400 block">{{ log.date }}</span>
-                        {{ log.content }}
-                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-3 rounded mb-2 text-sm dark:text-gray-300 shadow-sm"><span class="text-xs text-gray-400 block">{{ log.date }}</span>{{ log.content }}</div>
                     {% endif %}
                 {% endfor %}
             </div>
@@ -101,146 +79,52 @@
 
 <div id="edit-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-lg border dark:border-gray-700">
-        <h2 class="text-2xl font-bold mb-6 dark:text-white border-b dark:border-gray-700 pb-2">Edit Goal Settings</h2>
-        
+        <h2 class="text-2xl font-bold mb-6 dark:text-white border-b dark:border-gray-700 pb-2">Edit Settings</h2>
         <form action="{{ url_for('edit_step', step_id=step.id) }}" method="POST" class="space-y-4">
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Title</label>
-                <input type="text" name="title" value="{{ step.title }}" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
-            </div>
-            
-            <div>
-                <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Category</label>
-                <input type="text" name="category" value="{{ step.category }}" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-            </div>
-
+            <div><label class="block text-xs font-bold uppercase text-gray-500 mb-1">Title</label><input type="text" name="title" value="{{ step.title }}" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" required></div>
+            <div><label class="block text-xs font-bold uppercase text-gray-500 mb-1">Category</label><input type="text" name="category" value="{{ step.category }}" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"></div>
             <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Duration</label>
-                    <select name="timeframe" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option value="Weekly" {% if step.timeframe == 'Weekly' %}selected{% endif %}>Weekly</option>
-                        <option value="Monthly" {% if step.timeframe == 'Monthly' %}selected{% endif %}>Monthly</option>
-                        <option value="Yearly" {% if step.timeframe == 'Yearly' %}selected{% endif %}>Yearly</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Deadline Mode</label>
-                    <select name="deadline_mode" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <option value="rolling" {% if step.deadline_mode == 'rolling' %}selected{% endif %}>Rolling</option>
-                        <option value="calendar" {% if step.deadline_mode == 'calendar' %}selected{% endif %}>Calendar</option>
-                    </select>
-                </div>
+                <div><label class="block text-xs font-bold uppercase text-gray-500 mb-1">Duration</label><select name="timeframe" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"><option value="Weekly" {% if step.timeframe == 'Weekly' %}selected{% endif %}>Weekly</option><option value="Monthly" {% if step.timeframe == 'Monthly' %}selected{% endif %}>Monthly</option><option value="Yearly" {% if step.timeframe == 'Yearly' %}selected{% endif %}>Yearly</option></select></div>
+                <div><label class="block text-xs font-bold uppercase text-gray-500 mb-1">Deadline Mode</label><select name="deadline_mode" class="w-full border p-2 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"><option value="rolling" {% if step.deadline_mode == 'rolling' %}selected{% endif %}>Rolling</option><option value="calendar" {% if step.deadline_mode == 'calendar' %}selected{% endif %}>Calendar</option></select></div>
             </div>
-
-            <div class="flex justify-end gap-3 pt-4 border-t dark:border-gray-700 mt-4">
-                <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">Cancel</button>
-                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Save Changes</button>
-            </div>
+            <div class="flex justify-end gap-3 pt-4 border-t dark:border-gray-700 mt-4"><button type="button" onclick="closeEditModal()" class="px-4 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">Cancel</button><button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Save</button></div>
         </form>
-
-        <div class="mt-6 pt-6 border-t border-red-200 dark:border-red-900/50">
-            <h4 class="text-xs font-bold text-red-500 uppercase mb-2">Danger Zone</h4>
-            <div class="flex justify-between items-center">
-                <p class="text-xs text-gray-400">Permanently delete this goal and all logs.</p>
-                <a href="{{ url_for('delete_step', step_id=step.id) }}" onclick="return confirm('Are you sure? This cannot be undone.')" class="bg-red-100 text-red-600 px-3 py-1 rounded text-sm hover:bg-red-600 hover:text-white transition">Delete Goal</a>
-            </div>
-        </div>
     </div>
 </div>
 
 <div id="timer-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-sm">
     <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm border border-gray-700">
-        <h2 class="text-gray-500 uppercase text-xs font-bold tracking-widest mb-4">Deep Focus Mode</h2>
-        
+        <h2 class="text-gray-500 uppercase text-xs font-bold tracking-widest mb-4">Focus Mode</h2>
         <div class="text-6xl font-black mb-6 tabular-nums dark:text-white" id="timer-display">25:00</div>
-        
-        <div id="timer-controls" class="mb-6 flex justify-center items-center gap-2">
-            <label class="text-xs text-gray-400">Minutes:</label>
-            <input type="number" id="custom-minutes" value="25" min="1" max="180" class="w-16 border p-1 rounded text-center dark:bg-gray-700 dark:text-white font-bold">
-        </div>
-        
-        <div class="grid grid-cols-2 gap-4 mb-6">
-            <button onclick="startTimer()" id="start-btn" class="bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700">Start</button>
-            <button onclick="closeTimer()" class="bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300">Exit</button>
-        </div>
-        <p class="text-xs text-gray-400">Completing this will prompt you to log.</p>
+        <div id="timer-controls" class="mb-6 flex justify-center items-center gap-2"><label class="text-xs text-gray-400">Minutes:</label><input type="number" id="custom-minutes" value="25" min="1" max="180" class="w-16 border p-1 rounded text-center dark:bg-gray-700 dark:text-white font-bold"></div>
+        <div class="grid grid-cols-2 gap-4 mb-6"><button onclick="startTimer()" id="start-btn" class="bg-indigo-600 text-white py-3 rounded-lg font-bold hover:bg-indigo-700">Start</button><button onclick="closeTimer()" class="bg-gray-200 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-300">Exit</button></div>
     </div>
 </div>
 
 <script>
-    // --- MODAL CONTROLS ---
     function openEditModal() { document.getElementById('edit-modal').classList.remove('hidden'); }
     function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
-    
-    // --- SUBTASK AJAX ---
     function toggleSubtask(checkbox, id) {
         const textSpan = document.getElementById(`text-${id}`);
         if(checkbox.checked) textSpan.classList.add('line-through', 'text-gray-400');
         else textSpan.classList.remove('line-through', 'text-gray-400');
-
-        fetch(`/toggle_subtask/${id}`, { method: 'POST' })
+        fetch(`/toggle_subtask/${id}`, { method: 'POST' }).then(res => res.json()).then(data => { if(data.success && checkbox.checked) window.location.reload(); });
+    }
+    // SHARE LOGIC
+    function shareStep(id) {
+        fetch(`/step/share/${id}`)
             .then(res => res.json())
-            .then(data => { if(data.success && checkbox.checked) window.location.reload(); });
+            .then(data => {
+                navigator.clipboard.writeText(data.link);
+                alert("Public link copied to clipboard! Send it to your accountability partner.");
+            });
     }
-
-    // --- FOCUS TIMER LOGIC (UPDATED) ---
-    let timerInterval;
-    let timeLeft;
-    
-    function openTimer() { 
-        document.getElementById('timer-modal').classList.remove('hidden'); 
-    }
-    
-    function closeTimer() { 
-        document.getElementById('timer-modal').classList.add('hidden'); 
-        clearInterval(timerInterval);
-        document.getElementById('start-btn').innerText = "Start";
-        document.getElementById('start-btn').disabled = false;
-        document.getElementById('timer-controls').classList.remove('hidden'); // Show input again
-    }
-
-    function updateDisplay() {
-        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-        const s = (timeLeft % 60).toString().padStart(2, '0');
-        document.getElementById('timer-display').innerText = `${m}:${s}`;
-    }
-
-    function startTimer() {
-        // 1. Get Custom Time
-        const minutesInput = document.getElementById('custom-minutes').value;
-        timeLeft = minutesInput * 60;
-        
-        // 2. UI Updates
-        document.getElementById('start-btn').innerText = "Focusing...";
-        document.getElementById('start-btn').disabled = true;
-        document.getElementById('timer-controls').classList.add('hidden'); // Hide input while running
-        
-        updateDisplay();
-        
-        // 3. Start Interval
-        timerInterval = setInterval(() => {
-            timeLeft--;
-            updateDisplay();
-            
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                finishSession();
-            }
-        }, 1000);
-    }
-
-    function finishSession() {
-        const minutesDone = document.getElementById('custom-minutes').value;
-        alert("Focus Session Complete! Great job.");
-        closeTimer();
-        
-        const logArea = document.getElementById('log-textarea');
-        logArea.value = `🍅 Completed a ${minutesDone}-minute Deep Focus session.\n` + logArea.value;
-        logArea.focus();
-        document.getElementById('log-container').scrollIntoView({ behavior: 'smooth' });
-    }
-    
-    // --- ZEN MODE LOGIC ---
+    let timerInterval, timeLeft;
+    function openTimer() { document.getElementById('timer-modal').classList.remove('hidden'); }
+    function closeTimer() { document.getElementById('timer-modal').classList.add('hidden'); clearInterval(timerInterval); document.getElementById('start-btn').innerText = "Start"; document.getElementById('start-btn').disabled = false; document.getElementById('timer-controls').classList.remove('hidden'); }
+    function updateDisplay() { const m = Math.floor(timeLeft / 60).toString().padStart(2, '0'); const s = (timeLeft % 60).toString().padStart(2, '0'); document.getElementById('timer-display').innerText = `${m}:${s}`; }
+    function startTimer() { timeLeft = document.getElementById('custom-minutes').value * 60; document.getElementById('start-btn').innerText = "Focusing..."; document.getElementById('start-btn').disabled = true; document.getElementById('timer-controls').classList.add('hidden'); updateDisplay(); timerInterval = setInterval(() => { timeLeft--; updateDisplay(); if (timeLeft <= 0) { clearInterval(timerInterval); finishSession(); } }, 1000); }
+    function finishSession() { alert("Focus Complete!"); closeTimer(); const logArea = document.getElementById('log-textarea'); logArea.value = `🍅 Completed a ${document.getElementById('custom-minutes').value}-minute session.\n` + logArea.value; logArea.focus(); document.getElementById('log-container').scrollIntoView({ behavior: 'smooth' }); }
     function enableZen(id) { document.getElementById(id).classList.add('zen-active'); }
     function disableZen(e, id) { e.stopPropagation(); document.getElementById(id).classList.remove('zen-active'); }
 </script>

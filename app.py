@@ -4,6 +4,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from models import db, User, Step, StepLog, GlobalJournal, SubTask
 from datetime import datetime, date, timedelta
 import calendar
+import uuid
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'stepping_stones_secret_key'
@@ -28,7 +29,9 @@ def inject_today():
 # ==========================================
 
 def get_heatmap_data(user):
-    """Fetches all logs for the user to populate the GitHub-style heatmap."""
+    """
+    Fetches all logs for the user to populate the GitHub-style heatmap.
+    """
     logs = db.session.query(StepLog.date, db.func.count(StepLog.id))\
         .filter(StepLog.user_id == user.id)\
         .group_by(StepLog.date).all()
@@ -40,7 +43,9 @@ def get_heatmap_data(user):
     return data
 
 def calculate_deadline(timeframe, mode):
-    """Calculates the target date based on User selection."""
+    """
+    Calculates the target date based on User selection.
+    """
     today = date.today()
     
     if mode == 'rolling':
@@ -70,16 +75,31 @@ def calculate_deadline(timeframe, mode):
     return today + timedelta(days=7) # Default fallback
 
 def update_streak_status(user):
-    """Handles logic for Daily Streaks, Freezes, and Resets."""
+    """
+    Handles logic for Daily Streaks, Freezes, and Rest Days.
+    """
     today = date.today()
     
-    # Check if we need to reset or freeze
+    # Check if we need to reset, freeze, or apply rest day logic
     if user.last_streak_date:
         delta = (today - user.last_streak_date).days
         
         # If delta > 1, it means they missed at least one full day
         if delta > 1:
-            if user.streak_freezes > 0:
+            yesterday = today - timedelta(days=1)
+            
+            # Check if yesterday was a designated Rest Day
+            # 0=Monday, 6=Sunday
+            is_protected_by_rest = False
+            if user.rest_days:
+                rest_days_list = user.rest_days.split(',')
+                if str(yesterday.weekday()) in rest_days_list:
+                    is_protected_by_rest = True
+            
+            if is_protected_by_rest:
+                # Do nothing (Streak is safe)
+                pass
+            elif user.streak_freezes > 0:
                 # Use a freeze
                 user.streak_freezes -= 1
                 user.last_streak_date = today - timedelta(days=1)
@@ -127,6 +147,66 @@ def dashboard():
         user_created_at=current_user.created_at.strftime('%Y-%m-%d')
     )
 
+# ==========================================
+#           PHASE 4: NEW FEATURES
+# ==========================================
+
+@app.route('/settings/rest_days', methods=['POST'])
+@login_required
+def set_rest_days():
+    """
+    Updates the user's preferred rest days (e.g., Sat/Sun).
+    """
+    days = request.form.getlist('rest_days') # Returns list like ['5', '6']
+    current_user.rest_days = ",".join(days)
+    
+    db.session.commit()
+    flash("Rest days updated! Enjoy your time off.", "success")
+    return redirect(url_for('dashboard'))
+
+@app.route('/step/share/<int:step_id>')
+@login_required
+def generate_share_link(step_id):
+    """
+    Generates a unique public link for a specific goal.
+    """
+    step = Step.query.get_or_404(step_id)
+    
+    if step.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Generate token if it doesn't exist
+    if not step.share_token:
+        step.share_token = str(uuid.uuid4())[:8] # Short 8-char token
+        db.session.commit()
+    
+    # Create full URL
+    link = url_for('view_shared_step', token=step.share_token, _external=True)
+    return jsonify({'link': link})
+
+@app.route('/shared/<token>')
+def view_shared_step(token):
+    """
+    Public read-only view for accountability partners.
+    """
+    step = Step.query.filter_by(share_token=token).first_or_404()
+    history = StepLog.query.filter_by(step_id=step.id).order_by(StepLog.date.desc()).all()
+    
+    return render_template('shared_step.html', step=step, history=history)
+
+@app.route('/calendar')
+@login_required
+def calendar_view():
+    """
+    Time Travel view: Shows all history linearly.
+    """
+    logs = StepLog.query.filter_by(user_id=current_user.id).order_by(StepLog.date.desc()).all()
+    return render_template('calendar_view.html', logs=logs)
+
+# ==========================================
+#          STANDARD STEP ROUTES
+# ==========================================
+
 @app.route('/steps')
 @login_required
 def all_steps():
@@ -173,13 +253,9 @@ def create_step():
         )
         db.session.add(new_step)
         db.session.commit()
-        flash(f"Goal '{title}' created! Deadline: {deadline.strftime('%Y-%m-%d')}", 'success')
+        flash(f"Goal created!", 'success')
         
     return redirect(request.referrer or url_for('dashboard'))
-
-# ==========================================
-#          STEP VIEW, LOGS & EDITING
-# ==========================================
 
 @app.route('/step/<int:step_id>', methods=['GET', 'POST'])
 @login_required
@@ -193,19 +269,15 @@ def step_view(step_id):
 
     if request.method == 'POST':
         if 'overview_content' in request.form:
-            # Updating Knowledge Base
             step.overview_content = request.form['overview_content']
-            flash('Knowledge Base updated.', 'success')
-        
+            flash('Saved.', 'success')
         elif 'log_content' in request.form:
-            # Creating/Updating Daily Log
             content = request.form['log_content']
             if todays_log:
                 todays_log.content = content
             else:
                 db.session.add(StepLog(content=content, step=step, user=current_user, date=today))
-            flash('Logged successfully!', 'success')
-            
+            flash('Logged!', 'success')
         db.session.commit()
         return redirect(url_for('step_view', step_id=step.id))
 
@@ -219,24 +291,18 @@ def edit_step(step_id):
     if step.user_id != current_user.id:
         return redirect(url_for('dashboard'))
     
-    # 1. Update Basic Fields
     step.title = request.form.get('title')
     step.category = request.form.get('category')
-    
-    # 2. Check if Timing Changed
     new_timeframe = request.form.get('timeframe')
     new_mode = request.form.get('deadline_mode')
     
-    # Only recalculate deadline if parameters changed
     if new_timeframe != step.timeframe or new_mode != step.deadline_mode:
         step.timeframe = new_timeframe
         step.deadline_mode = new_mode
         step.deadline_date = calculate_deadline(new_timeframe, new_mode)
-        flash(f"Updated! New deadline: {step.deadline_date.strftime('%Y-%m-%d')}", "success")
-    else:
-        flash("Details updated.", "success")
         
     db.session.commit()
+    flash("Updated!", "success")
     return redirect(url_for('step_view', step_id=step.id))
 
 @app.route('/step/delete/<int:step_id>')
@@ -246,7 +312,6 @@ def delete_step(step_id):
     if step.user_id == current_user.id:
         db.session.delete(step)
         db.session.commit()
-        flash(f'Step "{step.title}" deleted forever.', 'success')
     return redirect(url_for('dashboard'))
 
 @app.route('/step/archive/<int:step_id>')
@@ -256,26 +321,22 @@ def archive_step(step_id):
     if step.user_id == current_user.id:
         step.is_active = False
         db.session.commit()
-        flash(f'Step "{step.title}" marked as Accomplished!', 'success')
     return redirect(url_for('dashboard'))
 
 # ==========================================
-#             SUBTASK LOGIC
+#             SUBTASK ROUTES
 # ==========================================
 
 @app.route('/step/<int:step_id>/add_subtask', methods=['POST'])
 @login_required
 def add_subtask(step_id):
     step = Step.query.get_or_404(step_id)
-    if step.user_id != current_user.id:
-        return jsonify({'error': 'Unauthorized'}), 403
-    
     text = request.form.get('subtask_text')
-    if text:
-        new_task = SubTask(text=text, step=step)
-        db.session.add(new_task)
-        db.session.commit()
     
+    if text and step.user_id == current_user.id:
+        db.session.add(SubTask(text=text, step=step))
+        db.session.commit()
+        
     return redirect(url_for('step_view', step_id=step.id))
 
 @app.route('/toggle_subtask/<int:subtask_id>', methods=['POST'])
@@ -285,25 +346,19 @@ def toggle_subtask(subtask_id):
     if subtask.step.user_id != current_user.id:
         return jsonify({'error': 'Unauthorized'}), 403
     
-    # Toggle Status
     subtask.is_completed = not subtask.is_completed
     
-    # AUTOMATIC LOGGING LOGIC
     if subtask.is_completed:
         today = date.today()
-        # Check if log exists for today
-        existing_log = StepLog.query.filter_by(step_id=subtask.step.id, date=today).first()
-        
-        if not existing_log:
-            # Create a log automatically
-            auto_msg = f"✅ Completed subtask: {subtask.text}"
-            db.session.add(StepLog(content=auto_msg, step=subtask.step, user=current_user, date=today))
-            flash("Subtask completed! Streak updated automatically. 🔥", "success")
+        # Check for existing log to prevent duplicates
+        if not StepLog.query.filter_by(step_id=subtask.step.id, date=today).first():
+            db.session.add(StepLog(content=f"✅ {subtask.text}", step=subtask.step, user=current_user, date=today))
+            flash("Streak updated!", "success")
         
         update_streak_status(current_user)
-
+        
     db.session.commit()
-    return jsonify({'success': True, 'is_completed': subtask.is_completed})
+    return jsonify({'success': True})
 
 @app.route('/delete_subtask/<int:subtask_id>')
 @login_required
@@ -317,7 +372,7 @@ def delete_subtask(subtask_id):
     return redirect(url_for('dashboard'))
 
 # ==========================================
-#          JOURNAL & PREFERENCES
+#             JOURNAL ROUTES
 # ==========================================
 
 @app.route('/journal', methods=['POST'])
@@ -334,7 +389,7 @@ def update_global_journal():
         journal.title = title
     else:
         db.session.add(GlobalJournal(content=content, title=title, user=current_user, date=today))
-    
+        
     db.session.commit()
     return redirect(url_for('dashboard'))
 
@@ -342,8 +397,7 @@ def update_global_journal():
 @login_required
 def journal_history():
     journals = GlobalJournal.query.filter_by(user_id=current_user.id).order_by(GlobalJournal.date.desc()).all()
-    now = datetime.utcnow()
-    return render_template('journal_history.html', journals=journals, now=now)
+    return render_template('journal_history.html', journals=journals, now=datetime.utcnow())
 
 @app.route('/journal/edit/<int:id>', methods=['POST'])
 @login_required
@@ -352,17 +406,18 @@ def edit_old_journal(id):
     if journal.user_id != current_user.id:
         return redirect(url_for('dashboard'))
     
-    # 48 Hour Edit Lock
-    diff = datetime.utcnow() - journal.created_at
-    if diff.total_seconds() > 172800:
-        flash("Cannot edit entries older than 48 hours.", "error")
+    if (datetime.utcnow() - journal.created_at).total_seconds() > 172800:
+        flash("Too old to edit.", "error")
         return redirect(url_for('journal_history'))
-
+        
     journal.content = request.form.get('content')
     journal.title = request.form.get('title')
     db.session.commit()
-    flash("Entry updated.", "success")
     return redirect(url_for('journal_history'))
+
+# ==========================================
+#             USER SETTINGS
+# ==========================================
 
 @app.route('/adjust_target/<string:action>')
 @login_required
@@ -382,22 +437,17 @@ def toggle_theme():
     return jsonify({'dark_mode': current_user.is_dark_mode})
 
 # ==========================================
-#            AUTHENTICATION
+#             AUTHENTICATION
 # ==========================================
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        
-        if user and check_password_hash(user.password, password):
+        user = User.query.filter_by(username=request.form.get('username')).first()
+        if user and check_password_hash(user.password, request.form.get('password')):
             login_user(user)
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('dashboard'))
-        
-        flash('Invalid username or password.', 'error')
+            return redirect(request.args.get('next') or url_for('dashboard'))
+        flash('Invalid details.', 'error')
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -407,15 +457,15 @@ def register():
         password = request.form.get('password')
         
         if User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'error')
+            flash('Username taken.', 'error')
         else:
             hashed_pw = generate_password_hash(password)
+            # Make sure Rest Days column is handled in models, handled here by default=None
             new_user = User(username=username, password=hashed_pw, is_dark_mode=True)
             db.session.add(new_user)
             db.session.commit()
-            
-            flash('Account created! Please login.', 'success')
             return redirect(url_for('login'))
+            
     return render_template('register.html')
 
 @app.route('/logout')
@@ -423,10 +473,6 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('login'))
-
-# ==========================================
-#               MAIN EXECUTION
-# ==========================================
 
 if __name__ == '__main__':
     with app.app_context():

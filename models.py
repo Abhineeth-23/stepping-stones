@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
+import uuid
 
 db = SQLAlchemy()
 
@@ -9,21 +10,20 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
     is_dark_mode = db.Column(db.Boolean, default=True)
-    
-    # This was causing "AttributeError: 'User' object has no attribute 'created_at'"
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Streak Logic
     daily_target = db.Column(db.Integer, default=2)
     current_streak = db.Column(db.Integer, default=0)
     last_streak_date = db.Column(db.Date, nullable=True)
     streak_freezes = db.Column(db.Integer, default=3)
+    
+    # NEW: Rest Days (Stores string like "6" for Sunday, or "5,6" for Sat/Sun)
+    # 0=Mon, 1=Tue, ... 6=Sun
+    rest_days = db.Column(db.String(20), default="") 
 
-    # Relationships
     steps = db.relationship('Step', backref='user', lazy=True)
     global_journals = db.relationship('GlobalJournal', backref='user', lazy=True)
-    
-    # This fixes "TypeError: 'user' is an invalid keyword argument"
     step_logs = db.relationship('StepLog', backref='user', lazy=True)
 
 class Step(db.Model):
@@ -38,9 +38,13 @@ class Step(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # NEW: Sharing Token (Unique ID for public link)
+    share_token = db.Column(db.String(50), unique=True, nullable=True)
+
     logs = db.relationship('StepLog', backref='step', cascade="all, delete", lazy=True)
     subtasks = db.relationship('SubTask', backref='step', cascade="all, delete", lazy=True)
 
+# ... (Keep StepLog, GlobalJournal, SubTask exactly as they were) ...
 class StepLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold dark:text-white mb-8">🗓️ History Calendar</h1>
+
+    <div class="space-y-8">
+        {% for log in logs %}
+        <div class="flex gap-4">
+            <div class="flex flex-col items-center">
+                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <div class="w-0.5 bg-gray-200 dark:bg-gray-700 flex-1 h-full min-h-[50px]"></div>
+            </div>
+            
+            <div class="pb-8">
+                <h3 class="font-bold text-gray-800 dark:text-gray-200 mb-1">{{ log.date.strftime('%A, %B %d') }}</h3>
+                <div class="bg-white dark:bg-gray-800 p-4 rounded shadow border-l-4 border-blue-500">
+                    <p class="text-gray-600 dark:text-gray-300">{{ log.content }}</p>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-gray-400">No history found.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

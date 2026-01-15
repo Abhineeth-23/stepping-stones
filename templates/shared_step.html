@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Goal: {{ step.title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8 flex justify-center">
+    <div class="max-w-2xl w-full bg-white p-8 rounded-xl shadow-lg border-t-4 border-blue-600">
+        <div class="mb-6">
+            <span class="text-xs font-bold uppercase text-gray-400">Accountability View</span>
+            <h1 class="text-3xl font-bold text-gray-800">{{ step.title }}</h1>
+            <p class="text-gray-500">{{ step.category }} • {{ step.timeframe }}</p>
+        </div>
+
+        <div class="bg-blue-50 p-6 rounded-lg mb-8">
+            <h2 class="font-bold text-blue-800 mb-4">📜 Recent Activity</h2>
+            <div class="space-y-3">
+                {% for log in history %}
+                <div class="bg-white p-4 rounded shadow-sm flex gap-4">
+                    <div class="text-xs font-bold text-gray-400 w-24">{{ log.date }}</div>
+                    <div class="text-gray-700 text-sm">{{ log.content }}</div>
+                </div>
+                {% else %}
+                <p class="text-gray-400 italic">No activity logs yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a href="{{ url_for('login') }}" class="text-blue-600 hover:underline font-bold">Create your own Goal Tracker</a>
+        </div>
+    </div>
+</body>
+</html>
