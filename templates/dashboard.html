@@ -7,23 +7,22 @@
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700 flex flex-col">
             <h2 class="text-lg font-bold mb-2 flex items-center justify-between dark:text-white">
                 <span>📓 Daily Journal</span>
-                <button type="button" onclick="generatePrompt(event)" class="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded hover:bg-purple-200">✨ Give me a prompt</button>
+                <button type="button" onclick="generatePrompt(event)" class="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded hover:bg-purple-200">✨ Prompt</button>
             </h2>
             
             <form action="{{ url_for('update_global_journal') }}" method="POST" id="global-journal-container" class="flex-1 flex flex-col group" onclick="enableZen('global-journal-container')">
-                <input type="text" name="title" value="{{ daily_journal.title if daily_journal else today_date.strftime('%B %d, %Y') }}" class="mb-2 w-full bg-transparent font-bold border-b border-gray-200 dark:border-gray-700 focus:outline-none dark:text-gray-200">
+                
+                <input type="text" name="title" 
+                       value="{{ daily_journal.title if daily_journal else (('🌴 Rest Day: ' + special_day_reason) if special_day_reason else today_date.strftime('%B %d, %Y')) }}" 
+                       class="mb-2 w-full bg-transparent font-bold border-b border-gray-200 dark:border-gray-700 focus:outline-none dark:text-gray-200 {{ 'text-purple-600 dark:text-purple-400' if special_day_reason else '' }}">
                 
                 <textarea id="journal-area" name="content" class="w-full h-40 border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-4 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all">{{ daily_journal.content if daily_journal else '' }}</textarea>
                 
                 <button class="mt-3 bg-gray-800 dark:bg-gray-600 text-white px-4 py-2 rounded w-full hover:bg-black">Save Entry</button>
                 
                 <div class="zen-overlay-btn absolute top-8 right-8 flex gap-3">
-                    <button type="button" onclick="generatePrompt(event)" class="bg-purple-100 text-purple-600 px-4 py-2 rounded-full font-bold shadow-lg hover:bg-purple-200 transition">
-                        ✨ Prompt
-                    </button>
-                    <button type="button" onclick="disableZen(event, 'global-journal-container')" class="bg-white text-black px-6 py-2 rounded-full font-bold shadow-lg hover:bg-gray-200 transition">
-                        Done
-                    </button>
+                    <button type="button" onclick="generatePrompt(event)" class="bg-purple-100 text-purple-600 px-4 py-2 rounded-full font-bold shadow-lg hover:bg-purple-200 transition">✨ Prompt</button>
+                    <button type="button" onclick="disableZen(event, 'global-journal-container')" class="bg-white text-black px-6 py-2 rounded-full font-bold shadow-lg hover:bg-gray-200 transition">Done</button>
                 </div>
             </form>
         </div>
@@ -32,9 +31,8 @@
             <div class="flex justify-between items-end mb-4">
                 <h3 class="text-sm font-bold uppercase text-gray-400">Your Journey</h3>
                 <div class="flex gap-2 text-xs">
-                    <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600"></div> No Activity</span>
-                    <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-orange-300"></div> Some</span>
-                    <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-orange-600"></div> A lot</span>
+                    <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-purple-400"></div> Rest</span>
+                    <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-orange-400"></div> Work</span>
                 </div>
             </div>
             
@@ -43,23 +41,28 @@
             </div>
 
             <div class="mt-2 text-right">
-                <a href="{{ url_for('calendar_view') }}" class="text-xs font-bold text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
-                    View Full History 🗓️
-                </a>
+                <a href="{{ url_for('calendar_view') }}" class="text-xs font-bold text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:underline">View Full History 🗓️</a>
             </div>
         </div>
 
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700">
-            <h3 class="text-sm font-bold uppercase text-gray-400 mb-3">💤 Rest Days</h3>
+            <h3 class="text-sm font-bold uppercase text-gray-400 mb-3">📅 Plan a Special Day</h3>
+            <form action="{{ url_for('add_custom_date') }}" method="POST" class="flex flex-col gap-2">
+                <input type="date" name="date" class="border p-2 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:border-purple-500" required>
+                <input type="text" name="reason" placeholder="Reason (e.g. Birthday, Vacation)" class="border p-2 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:border-purple-500" required>
+                <button class="bg-purple-600 text-white py-2 rounded text-sm font-bold hover:bg-purple-700 shadow transition">Mark as Rest Day</button>
+            </form>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700">
+            <h3 class="text-sm font-bold uppercase text-gray-400 mb-3">💤 Weekly Rest Days</h3>
             <form action="{{ url_for('set_rest_days') }}" method="POST" class="flex items-center justify-between">
                 <div class="flex gap-4">
                     <label class="flex items-center gap-2 cursor-pointer dark:text-white text-sm">
-                        <input type="checkbox" name="rest_days" value="5" {% if user.rest_days and '5' in user.rest_days %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"> 
-                        <span>Saturday</span>
+                        <input type="checkbox" name="rest_days" value="5" {% if user.rest_days and '5' in user.rest_days %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded"> <span>Sat</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer dark:text-white text-sm">
-                        <input type="checkbox" name="rest_days" value="6" {% if user.rest_days and '6' in user.rest_days %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"> 
-                        <span>Sunday</span>
+                        <input type="checkbox" name="rest_days" value="6" {% if user.rest_days and '6' in user.rest_days %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded"> <span>Sun</span>
                     </label>
                 </div>
                 <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">Save</button>
@@ -132,9 +135,10 @@
         area.setSelectionRange(0, 0); 
     }
 
-    // --- 2. DYNAMIC HEATMAP GENERATOR ---
+    // --- 2. DYNAMIC HEATMAP GENERATOR (UPDATED FOR REST DAYS) ---
     document.addEventListener("DOMContentLoaded", function() {
         const heatmapData = {{ heatmap_data|tojson }};
+        const restDaysMap = {{ custom_rest_days|tojson }}; // Passed from Flask
         const signupDateStr = "{{ user_created_at }}";
         
         const container = document.getElementById('heatmap-grid');
@@ -142,9 +146,8 @@
         let startDate = new Date(signupDateStr);
         let today = new Date();
         
-        // Reset to 1st of signup month for cleaner look
+        // Reset to 1st of signup month
         startDate.setDate(1);
-
         startDate.setHours(0,0,0,0);
         today.setHours(0,0,0,0);
         
@@ -164,21 +167,34 @@
                 const cell = document.createElement('div');
                 cell.className = "w-3 h-3 rounded-sm transition-colors duration-200 border border-transparent hover:border-gray-400 cursor-pointer";
                 
-                cell.classList.add('bg-gray-100', 'dark:bg-gray-700', 'dark:border-gray-600'); 
-                
                 const count = heatmapData[dateStr] || 0;
+                const restReason = restDaysMap[dateStr];
+
+                // --- COLOR LOGIC ---
                 if (count > 0) {
+                    // Activity overrides Rest Day (Orange)
                     cell.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'dark:border-gray-600');
                     if (count == 1) cell.classList.add('bg-orange-200');
                     else if (count <= 3) cell.classList.add('bg-orange-400');
                     else cell.classList.add('bg-orange-600');
+                    
+                    cell.title = `${displayDate}: ${count} logs` + (restReason ? ` (Worked on ${restReason}!)` : "");
+                } 
+                else if (restReason) {
+                    // Rest Day with No Activity (Purple)
+                    cell.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'dark:border-gray-600');
+                    cell.classList.add('bg-purple-400');
+                    cell.title = `🌴 ${restReason} (${displayDate})`;
+                }
+                else {
+                    // Empty Day (Gray)
+                    cell.classList.add('bg-gray-100', 'dark:bg-gray-700', 'dark:border-gray-600');
+                    cell.title = `${displayDate}: No activity`;
                 }
 
-                cell.title = `${displayDate}: ${count} logs`;
                 weekCol.appendChild(cell);
                 currentDate.setDate(currentDate.getDate() + 1);
             }
-            
             container.appendChild(weekCol);
         }
         
@@ -186,5 +202,8 @@
             container.parentElement.scrollLeft = container.parentElement.scrollWidth;
         }
     });
+
+    function enableZen(id) { document.getElementById(id).classList.add('zen-active'); }
+    function disableZen(e, id) { e.stopPropagation(); document.getElementById(id).classList.remove('zen-active'); }
 </script>
 {% endblock %}

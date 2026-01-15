@@ -18,13 +18,15 @@ class User(UserMixin, db.Model):
     last_streak_date = db.Column(db.Date, nullable=True)
     streak_freezes = db.Column(db.Integer, default=3)
     
-    # NEW: Rest Days (Stores string like "6" for Sunday, or "5,6" for Sat/Sun)
-    # 0=Mon, 1=Tue, ... 6=Sun
+    # Weekly Rest Days (e.g. "5,6")
     rest_days = db.Column(db.String(20), default="") 
 
+    # Relationships
     steps = db.relationship('Step', backref='user', lazy=True)
     global_journals = db.relationship('GlobalJournal', backref='user', lazy=True)
     step_logs = db.relationship('StepLog', backref='user', lazy=True)
+    # NEW: Custom Dates
+    custom_rest_days = db.relationship('CustomRestDay', backref='user', lazy=True)
 
 class Step(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -37,14 +39,18 @@ class Step(db.Model):
     deadline_date = db.Column(db.Date, nullable=True) 
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # NEW: Sharing Token (Unique ID for public link)
     share_token = db.Column(db.String(50), unique=True, nullable=True)
 
     logs = db.relationship('StepLog', backref='step', cascade="all, delete", lazy=True)
     subtasks = db.relationship('SubTask', backref='step', cascade="all, delete", lazy=True)
 
-# ... (Keep StepLog, GlobalJournal, SubTask exactly as they were) ...
+class CustomRestDay(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    reason = db.Column(db.String(200), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+# ... (Keep StepLog, GlobalJournal, SubTask exactly as they were in previous code) ...
 class StepLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
