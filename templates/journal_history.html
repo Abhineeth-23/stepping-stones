@@ -1,34 +1,67 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold dark:text-white">Journal History</h1>
+<div class="max-w-3xl mx-auto">
+    <div class="flex justify-between items-center mb-8 border-b dark:border-gray-700 pb-4">
+        <div>
+            <h1 class="text-3xl font-bold dark:text-white">Journal History</h1>
+            <p class="text-gray-500 text-sm">Reflect on your past thoughts.</p>
+        </div>
         <a href="{{ url_for('dashboard') }}" class="text-blue-500 hover:underline">← Back to Dashboard</a>
     </div>
 
     <div class="space-y-6">
-        {% for entry in journals %}
-        <div class="bg-white dark:bg-gray-800 p-6 rounded shadow border dark:border-gray-700">
-            <form action="{{ url_for('edit_old_journal', id=entry.id) }}" method="POST">
-                <div class="flex justify-between items-center mb-4 border-b dark:border-gray-700 pb-2">
-                    <input name="title" value="{{ entry.title }}" class="font-bold text-xl bg-transparent focus:outline-none dark:text-white w-full">
-                    <span class="text-xs text-gray-400 whitespace-nowrap ml-4">{{ entry.date.strftime('%Y-%m-%d') }}</span>
+        {% for journal in journals %}
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border-l-4 border-purple-500">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ journal.title }}</h3>
+                    <span class="text-xs text-gray-400 uppercase tracking-wide">{{ journal.date.strftime('%A, %B %d, %Y') }}</span>
                 </div>
-
-                <textarea name="content" class="w-full bg-transparent border-none focus:ring-0 dark:text-gray-300 resize-y min-h-[100px]">{{ entry.content }}</textarea>
-
-                {% set time_diff = (now - entry.created_at).total_seconds() / 3600 %}
                 
-                <div class="mt-4 flex justify-end">
-                    {% if time_diff < 48 %}
-                        <button class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200">Update Entry</button>
-                    {% else %}
-                        <span class="text-xs text-gray-400 flex items-center gap-1">🔒 Locked (Archived)</span>
-                    {% endif %}
+                {% set hours_diff = (now - journal.created_at).total_seconds() / 3600 %}
+                {% if hours_diff < 48 %}
+                <button onclick="toggleEdit('edit-{{ journal.id }}')" class="text-xs text-gray-400 hover:text-blue-500 underline">
+                    Edit
+                </button>
+                {% endif %}
+            </div>
+
+            <div id="view-{{ journal.id }}" class="prose dark:prose-invert max-w-none text-gray-600 dark:text-gray-300 whitespace-pre-line">
+                {{ journal.content }}
+            </div>
+
+            {% if hours_diff < 48 %}
+            <form id="edit-{{ journal.id }}" action="{{ url_for('edit_old_journal', id=journal.id) }}" method="POST" class="hidden mt-4">
+                <input type="text" name="title" value="{{ journal.title }}" class="w-full border-b mb-2 p-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 font-bold focus:outline-none">
+                <textarea name="content" class="w-full h-32 border p-2 rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:outline-none resize-none">{{ journal.content }}</textarea>
+                <div class="flex justify-end gap-2 mt-2">
+                    <button type="button" onclick="toggleEdit('edit-{{ journal.id }}')" class="text-xs text-gray-500">Cancel</button>
+                    <button class="bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold">Save Changes</button>
                 </div>
             </form>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="text-center py-20 text-gray-400">
+            <p>No journal entries yet. Write something today!</p>
         </div>
         {% endfor %}
     </div>
 </div>
+
+<script>
+    function toggleEdit(id) {
+        const form = document.getElementById(id);
+        const viewId = id.replace('edit-', 'view-');
+        const view = document.getElementById(viewId);
+        
+        if (form.classList.contains('hidden')) {
+            form.classList.remove('hidden');
+            view.classList.add('hidden');
+        } else {
+            form.classList.add('hidden');
+            view.classList.remove('hidden');
+        }
+    }
+</script>
 {% endblock %}

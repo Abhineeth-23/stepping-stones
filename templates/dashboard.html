@@ -7,7 +7,10 @@
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700 flex flex-col">
             <h2 class="text-lg font-bold mb-2 flex items-center justify-between dark:text-white">
                 <span>📓 Daily Journal</span>
-                <button type="button" onclick="generatePrompt(event)" class="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded hover:bg-purple-200">✨ Prompt</button>
+                <div class="flex gap-2">
+                    <a href="{{ url_for('journal_history') }}" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300">📜 History</a>
+                    <button type="button" onclick="generatePrompt(event)" class="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded hover:bg-purple-200">✨ Prompt</button>
+                </div>
             </h2>
             
             <form action="{{ url_for('update_global_journal') }}" method="POST" id="global-journal-container" class="flex-1 flex flex-col group" onclick="enableZen('global-journal-container')">
