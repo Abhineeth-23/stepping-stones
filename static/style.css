@@ -1,0 +1,89 @@
+/* --- 1. SMOOTH BASE TRANSITIONS --- */
+body {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- 2. DARK MODE SCROLLBARS (Webkit/Chrome/Edge) --- */
+/* Only apply these when dark mode is active to match the theme */
+.dark ::-webkit-scrollbar {
+    width: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+    background: #111827; /* gray-900 */
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #4b5563; /* gray-600 */
+    border-radius: 5px;
+    border: 2px solid #111827; /* Padding effect */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #6b7280; /* gray-500 */
+}
+
+/* --- 3. ZEN MODE / FOCUS MODE --- */
+/* The overlay background */
+.zen-active {
+    position: fixed;
+    inset: 0;           /* top:0, right:0, bottom:0, left:0 */
+    z-index: 50;
+    padding: 2rem;
+    background-color: rgba(0, 0, 0, 0.85); /* Dark semi-transparent dim */
+    backdrop-filter: blur(8px);            /* Blurs the background content */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* Animation for opening */
+    animation: zenFadeIn 0.25s ease-out forwards;
+}
+
+/* The actual text area inside Zen Mode */
+.zen-active textarea {
+    width: 80%;
+    max-width: 900px;
+    height: 80%;
+    
+    border-radius: 12px;
+    font-size: 1.25rem; /* Larger text for focus */
+    line-height: 1.75;
+    padding: 2rem;
+    
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); /* Deep shadow */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    /* Ensure it stands out */
+    background-color: #1f2937; /* Dark gray background */
+    color: #f3f4f6;            /* Light text */
+}
+
+/* Hide the "Done" button normally */
+.zen-overlay-btn {
+    display: none;
+}
+
+/* Show the "Done" button only in Zen Mode */
+.zen-active .zen-overlay-btn {
+    display: block;
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    cursor: pointer;
+    
+    /* Animation */
+    animation: zenSlideDown 0.4s ease-out 0.1s forwards;
+    opacity: 0; /* Start hidden for animation */
+}
+
+/* --- 4. ANIMATIONS --- */
+@keyframes zenFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes zenSlideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}

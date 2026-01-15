@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-col md:flex-row justify-between items-center mb-8">
+    <h1 class="text-3xl font-bold dark:text-white">My Goals</h1>
+    
+    <div class="flex gap-2 mt-4 md:mt-0 overflow-x-auto pb-2">
+        <a href="{{ url_for('all_steps', filter='active') }}" class="px-3 py-1 rounded text-sm {{ 'bg-blue-600 text-white' if filter_type=='active' else 'bg-gray-200 dark:bg-gray-700 dark:text-gray-300' }}">All Active</a>
+        <a href="{{ url_for('all_steps', filter='Weekly') }}" class="px-3 py-1 rounded text-sm {{ 'bg-blue-600 text-white' if filter_type=='Weekly' else 'bg-gray-200 dark:bg-gray-700 dark:text-gray-300' }}">Weekly</a>
+        <a href="{{ url_for('all_steps', filter='Monthly') }}" class="px-3 py-1 rounded text-sm {{ 'bg-blue-600 text-white' if filter_type=='Monthly' else 'bg-gray-200 dark:bg-gray-700 dark:text-gray-300' }}">Monthly</a>
+        <a href="{{ url_for('all_steps', filter='Yearly') }}" class="px-3 py-1 rounded text-sm {{ 'bg-blue-600 text-white' if filter_type=='Yearly' else 'bg-gray-200 dark:bg-gray-700 dark:text-gray-300' }}">Yearly</a> <a href="{{ url_for('all_steps', filter='archived') }}" class="px-3 py-1 rounded text-sm {{ 'bg-blue-600 text-white' if filter_type=='archived' else 'bg-gray-200 dark:bg-gray-700 dark:text-gray-300' }}">Archived</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for step in steps %}
+    <a href="{{ url_for('step_view', step_id=step.id) }}" class="block group bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-xl transition border-l-4 border-blue-500 relative overflow-hidden">
+        
+        <div class="flex justify-between items-start mb-2">
+            <span class="text-xs font-bold uppercase text-blue-500 tracking-wider">{{ step.timeframe }}</span>
+            <span class="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">{{ step.category }}</span>
+        </div>
+        
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">{{ step.title }}</h3>
+        
+        {% set days_remaining = (step.deadline_date - date.today()).days %}
+        
+        <div class="flex items-center gap-2 text-sm border-t dark:border-gray-700 pt-3">
+            <span class="text-xl">⏳</span>
+            {% if days_remaining < 0 %}
+                <span class="text-red-500 font-bold">Overdue by {{ days_remaining|abs }} days</span>
+            {% else %}
+                <span class="{{ 'text-orange-500 font-bold' if days_remaining < 3 else 'text-gray-500 dark:text-gray-400' }}">
+                    {{ days_remaining }} Days Left
+                </span>
+            {% endif %}
+        </div>
+    </a>
+    {% else %}
+    <div class="col-span-3 text-center py-20 text-gray-400">
+        <p class="text-xl">No goals found.</p>
+        <button onclick="openModal()" class="text-blue-500 hover:underline mt-2">Create one?</button>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
