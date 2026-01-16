@@ -9,7 +9,6 @@ import uuid
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'stepping_stones_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
@@ -24,6 +23,22 @@ def load_user(user_id):
 @app.context_processor
 def inject_today():
     return {'date': date}
+
+# ----------------- DATABASE SWITCHER -----------------
+# 1. Try to get the database URL from the Cloud Environment (Render)
+database_url = os.environ.get('DATABASE_URL')
+
+if database_url:
+    # 2. If we are on the cloud, use Neon (Postgres)
+    # (Fix: Render uses 'postgres://' but SQLAlchemy needs 'postgresql://')
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # 3. If no cloud URL is found, fallback to local SQLite (Your Laptop)
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # ==========================================
 #              HELPER FUNCTIONS
