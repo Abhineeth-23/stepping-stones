@@ -227,6 +227,25 @@
             document.documentElement.classList.add('dark');
         {% endif %}
 
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            if (!menu) return;
+            menu.classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', function (e) {
+            const menu = document.getElementById('user-menu');
+            if (!menu) return;
+
+            if (
+                !e.target.closest('#user-menu') &&
+                !e.target.closest('.user-menu-trigger')
+            ) {
+                menu.classList.add('hidden');
+            }
+        });
+
+
         // AUTO-DISMISS FLASH MESSAGES
         document.addEventListener('click', function (e) {
             const menu = document.getElementById('user-menu');
