@@ -71,36 +71,26 @@ def get_custom_rest_days_map(user):
     return data
 
 def calculate_deadline(timeframe, mode):
-    """
-    Calculates the target date based on User selection.
-    """
     today = date.today()
     
+    # 1. Handle "Custom" or Missing Mode
+    if not mode or mode == 'custom':
+        # Fallback if logic fails elsewhere
+        return today + timedelta(days=7)
+
+    # 2. Rolling Deadlines (Standard)
     if mode == 'rolling':
-        # Simple addition: Today + X days
-        if timeframe == 'Weekly':
-            return today + timedelta(days=7)
-        if timeframe == 'Monthly':
-            return today + timedelta(days=30)
-        if timeframe == 'Yearly':
-            return today + timedelta(days=365)
+        if timeframe == 'Weekly': return today + timedelta(days=7)
+        if timeframe == 'Monthly': return today + timedelta(days=30)
+        if timeframe == 'Yearly': return today + timedelta(days=365)
     
+    # 3. Calendar Deadlines (End of Period)
     elif mode == 'calendar':
-        # End of CURRENT period logic
-        if timeframe == 'Weekly':
-            days_ahead = 6 - today.weekday()
-            if days_ahead < 0:
-                days_ahead += 7
-            return today + timedelta(days=days_ahead)
+        if timeframe == 'Weekly': return today + timedelta(days=(6 - today.weekday() + 7) % 7)
+        if timeframe == 'Monthly': return date(today.year, today.month, calendar.monthrange(today.year, today.month)[1])
+        if timeframe == 'Yearly': return date(today.year, 12, 31)
             
-        if timeframe == 'Monthly':
-            last_day = calendar.monthrange(today.year, today.month)[1]
-            return date(today.year, today.month, last_day)
-            
-        if timeframe == 'Yearly':
-            return date(today.year, 12, 31)
-            
-    return today + timedelta(days=7) # Default fallback
+    return today + timedelta(days=7) # Ultimate Fallback
 
 def update_streak_status(user):
     """
@@ -313,23 +303,27 @@ def all_steps():
 def create_step():
     title = request.form.get('title')
     category = request.form.get('category')
-    timeframe = request.form.get('timeframe')
-    mode = request.form.get('deadline_mode')
+    
+    # Inputs from the corrected form
+    timeframe = request.form.get('timeframe') # Weekly, Monthly, Yearly
+    deadline_mode = request.form.get('deadline_mode') # rolling, calendar
     
     if title:
-        deadline = calculate_deadline(timeframe, mode)
+        # Calculate deadline based on the mode
+        deadline = calculate_deadline(timeframe, deadline_mode)
         
         new_step = Step(
             title=title, 
             category=category, 
             timeframe=timeframe, 
-            deadline_mode=mode,
+            deadline_mode=deadline_mode,
             deadline_date=deadline,
             user=current_user
         )
         db.session.add(new_step)
         db.session.commit()
-        flash(f"Goal '{title}' created! Deadline: {deadline.strftime('%Y-%m-%d')}", 'success')
+        
+        flash(f"Goal created! Deadline: {deadline.strftime('%b %d, %Y')}", 'success')
         
     return redirect(request.referrer or url_for('dashboard'))
 
@@ -587,6 +581,31 @@ def delete_account():
         flash("Username confirmation did not match.", "error")
         return redirect(url_for('profile'))
 
+@app.route('/update_profile', methods=['POST'])
+@login_required
+def update_profile():
+    # Get Data
+    new_name = request.form.get('name')
+    new_email = request.form.get('email')
+    new_dob_str = request.form.get('dob')
+    
+    # Check if email is taken by someone else
+    existing_email = User.query.filter_by(email=new_email).first()
+    if existing_email and existing_email.id != current_user.id:
+        flash("Email already in use.", "error")
+        return redirect(url_for('profile'))
+
+    # Update Fields
+    current_user.name = new_name
+    current_user.email = new_email
+    
+    if new_dob_str:
+        current_user.dob = datetime.strptime(new_dob_str, '%Y-%m-%d').date()
+    
+    db.session.commit()
+    flash("Profile details updated.", "success")
+    return redirect(url_for('profile'))
+
 # ==========================================
 #             AUTHENTICATION
 # ==========================================
@@ -659,31 +678,6 @@ def register():
 def logout():
     logout_user()
     return redirect(url_for('login'))
-
-@app.route('/update_profile', methods=['POST'])
-@login_required
-def update_profile():
-    # Get Data
-    new_name = request.form.get('name')
-    new_email = request.form.get('email')
-    new_dob_str = request.form.get('dob')
-    
-    # Check if email is taken by someone else
-    existing_email = User.query.filter_by(email=new_email).first()
-    if existing_email and existing_email.id != current_user.id:
-        flash("Email already in use.", "error")
-        return redirect(url_for('profile'))
-
-    # Update Fields
-    current_user.name = new_name
-    current_user.email = new_email
-    
-    if new_dob_str:
-        current_user.dob = datetime.strptime(new_dob_str, '%Y-%m-%d').date()
-    
-    db.session.commit()
-    flash("Profile details updated.", "success")
-    return redirect(url_for('profile'))
 
 # ==========================================
 #              MAIN EXECUTION

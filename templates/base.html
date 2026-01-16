@@ -1,102 +1,204 @@
 <!DOCTYPE html>
-<html lang="en" class="{% if current_user.is_authenticated and current_user.is_dark_mode %}dark{% endif %}">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stepping Stones</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script> tailwind.config = { darkMode: 'class' } </script>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 min-h-screen flex flex-col">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-    {% if current_user.is_authenticated %}
-    <nav class="bg-white dark:bg-gray-800 shadow p-4 mb-6 flex justify-between items-center sticky top-0 z-40">
-        <div class="flex items-center gap-6">
-            <a href="{{ url_for('dashboard') }}" class="text-xl font-bold text-blue-600 dark:text-blue-400">Stepping Stones</a>
-            <div class="hidden md:flex gap-4 text-sm font-medium">
-                <a href="{{ url_for('dashboard') }}" class="hover:text-blue-500">Dashboard</a>
-                <a href="{{ url_for('all_steps') }}" class="hover:text-blue-500">My Goals</a>
-                <a href="{{ url_for('calendar_view') }}" class="hover:text-blue-500">Calendar</a>
-                <a href="{{ url_for('about') }}" class="hover:text-blue-500">About & Guide</a>
-            </div>
-        </div>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Nunito', 'sans-serif'] },
+                    colors: {
+                        stone: { 50: '#fafaf9', 100: '#f5f5f4', 200: '#e7e5e4', 800: '#292524', 900: '#1c1917' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html { scroll-behavior: smooth; }
         
-        <div class="flex items-center gap-4">
-            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-bold shadow">
-                + New Goal
-            </button>
-            <button onclick="toggleTheme()" class="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700">🌗</button>
+        /* ZEN MODE LOGIC */
+        .zen-active {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 50; padding: 2rem; background: rgba(255, 255, 255, 0.98);
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .dark .zen-active { background: rgba(28, 25, 23, 0.99); }
+        body.zen-open { overflow: hidden; }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 dark:bg-stone-900 dark:text-stone-200 transition-colors duration-300 font-sans pb-20">
+
+    <nav class="max-w-6xl mx-auto p-4 sticky top-0 z-40">
+        <div class="bg-white/90 dark:bg-stone-800/90 backdrop-blur-md rounded-2xl shadow-lg border border-white/50 dark:border-stone-700 px-4 py-3 flex justify-between items-center relative">
             
-            <a href="{{ url_for('profile') }}" class="text-gray-600 dark:text-gray-300 font-bold hover:text-blue-500 text-sm">
-                👤 {{ current_user.username }}
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2 group z-50">
+                <span class="text-2xl group-hover:scale-110 transition transform">🧱</span>
+                <span class="font-black text-lg tracking-tight text-stone-800 dark:text-white hidden sm:block">Stepping Stones</span>
             </a>
-            
-            <a href="{{ url_for('logout') }}" class="text-red-500 text-sm hover:underline">Logout</a>
+
+            <div class="hidden md:flex gap-6 text-sm font-bold text-stone-500 dark:text-stone-400 absolute left-1/2 transform -translate-x-1/2">
+                <a href="{{ url_for('dashboard') }}" class="hover:text-orange-500 transition">Dashboard</a>
+                <a href="{{ url_for('all_steps') }}" class="hover:text-orange-500 transition">My Path</a>
+                <a href="{{ url_for('calendar_view') }}" class="hover:text-orange-500 transition">History</a>
+                <a href="{{ url_for('about') }}" class="hover:text-orange-500 transition">Guide</a>
+            </div>
+
+            <div class="flex items-center gap-3 z-50">
+                {% if current_user.is_authenticated %}
+                <button onclick="openModal()" class="hidden sm:block bg-stone-800 hover:bg-black text-white dark:bg-stone-200 dark:text-stone-900 px-4 py-2 rounded-full text-xs font-bold shadow-md transition transform hover:scale-105">
+                    + New
+                </button>
+                {% endif %}
+                
+                <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-stone-200 dark:hover:bg-stone-700 transition">🌗</button>
+                
+                <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700">
+                    ☰
+                </button>
+
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('profile') }}" class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs hover:ring-2 ring-orange-400 transition">
+                        {{ current_user.username[0] | upper }}
+                    </a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="text-xs font-bold text-stone-500 hover:text-orange-500 transition">Login</a>
+                {% endif %}
+            </div>
+
+            <div id="mobile-menu" class="hidden absolute top-full left-0 w-full mt-2 bg-white dark:bg-stone-800 rounded-2xl shadow-xl border dark:border-stone-700 p-4 flex-col gap-4 text-center md:hidden">
+                <a href="{{ url_for('dashboard') }}" class="block font-bold text-stone-600 dark:text-stone-300 py-2">Dashboard</a>
+                <a href="{{ url_for('all_steps') }}" class="block font-bold text-stone-600 dark:text-stone-300 py-2">My Path</a>
+                <a href="{{ url_for('calendar_view') }}" class="block font-bold text-stone-600 dark:text-stone-300 py-2">History</a>
+                <a href="{{ url_for('about') }}" class="block font-bold text-stone-600 dark:text-stone-300 py-2">Guide</a>
+                {% if current_user.is_authenticated %}
+                <button onclick="openModal()" class="w-full bg-orange-500 text-white py-3 rounded-xl font-bold mt-2">+ New Stone</button>
+                {% endif %}
+            </div>
         </div>
     </nav>
 
-    <div id="goal-modal" class="fixed inset-0 z-50 hidden">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
-        
-        <div class="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
-            <div class="bg-white dark:bg-gray-800 w-full max-w-lg rounded-2xl shadow-2xl p-8 pointer-events-auto transform transition-all scale-100 border border-gray-200 dark:border-gray-700">
-                <h2 class="text-2xl font-bold mb-6 dark:text-white border-b dark:border-gray-700 pb-2">Create New Goal</h2>
-                
-                <form action="{{ url_for('create_step') }}" method="POST" class="space-y-5">
-                    
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Goal Title</label>
-                        <input type="text" name="title" placeholder="e.g. Master Python Backend" class="w-full border p-3 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none" required>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Category / Topic</label>
-                        <input type="text" name="category" placeholder="e.g. Career, Health, Creative..." class="w-full border p-3 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Duration</label>
-                            <select name="timeframe" class="w-full border p-3 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                <option value="Weekly">Weekly (7 Days)</option>
-                                <option value="Monthly">Monthly (30 Days)</option>
-                                <option value="Yearly">Yearly (365 Days)</option> </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Deadline Type</label>
-                            <select name="deadline_mode" class="w-full border p-3 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                <option value="rolling">Rolling (From Today)</option>
-                                <option value="calendar">Calendar (End of Week/Month)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="pt-4 flex justify-end gap-3">
-                        <button type="button" onclick="closeModal()" class="px-5 py-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded font-medium">Cancel</button>
-                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 shadow-lg">Start Journey 🚀</button>
-                    </div>
-                </form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="flash-messages" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-full max-w-md px-4 transition-opacity duration-500">
+            {% for category, message in messages %}
+                <div class="px-6 py-3 rounded-full shadow-2xl font-bold text-sm flex items-center gap-2 animate-bounce
+                    {% if category == 'success' %} bg-green-100 text-green-700 border-2 border-green-200
+                    {% elif category == 'error' %} bg-red-100 text-red-700 border-2 border-red-200
+                    {% else %} bg-blue-100 text-blue-700 border-2 border-blue-200 {% endif %}">
+                    <span>{{ '✅' if category == 'success' else ('⚠️' if category == 'error' else 'ℹ️') }}</span>
+                    {{ message }}
+                </div>
+            {% endfor %}
             </div>
-        </div>
-    </div>
-    {% endif %}
+        {% endif %}
+        {% endwith %}
 
-    <div class="container mx-auto px-4 flex-1">
-        {% block content %}{% endblock %}
+    <div id="create-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-stone-900/60 backdrop-blur-sm px-4">
+        <div class="bg-white dark:bg-stone-800 p-8 rounded-3xl shadow-2xl w-full max-w-lg border-4 border-white dark:border-stone-700 transition-all transform scale-100">
+            <h2 class="text-2xl font-black mb-1 dark:text-white">Lay a New Stone</h2>
+            <p class="text-stone-400 text-sm mb-6">Define a new goal to step towards.</p>
+            
+            <form action="{{ url_for('create_step') }}" method="POST" class="space-y-6">
+                
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-stone-400 mb-1">Goal Title</label>
+                        <input type="text" name="title" placeholder="e.g. Learn Python" class="w-full border-2 border-stone-100 p-3 rounded-xl dark:bg-stone-900 dark:border-stone-700 font-bold focus:border-orange-400 outline-none dark:text-white" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-stone-400 mb-1">Category</label>
+                        <input type="text" name="category" placeholder="e.g. Career, Health" class="w-full border-2 border-stone-100 p-3 rounded-xl dark:bg-stone-900 dark:border-stone-700 font-bold focus:border-orange-400 outline-none dark:text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-stone-400 mb-2">Deadline Mode</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        
+                        <label class="relative group cursor-pointer">
+                            <input type="radio" name="deadline_mode" value="rolling" checked class="peer hidden">
+                            <div class="p-4 rounded-xl border-2 border-stone-100 dark:border-stone-700 text-center font-bold text-stone-500 peer-checked:border-orange-500 peer-checked:text-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-stone-700 transition h-full flex flex-col justify-center items-center">
+                                <span class="text-2xl mb-1">🔄</span>
+                                <span>Rolling</span>
+                            </div>
+                            
+                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-3 bg-stone-800 text-white text-xs rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 text-center">
+                                <div class="font-bold text-orange-400 mb-1">Relative Time</div>
+                                Deadline is calculated from <em>today</em>.<br>
+                                (e.g. Weekly = 7 days from now)
+                                <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-8 border-transparent border-t-stone-800"></div>
+                            </div>
+                        </label>
+
+                        <label class="relative group cursor-pointer">
+                            <input type="radio" name="deadline_mode" value="calendar" class="peer hidden">
+                            <div class="p-4 rounded-xl border-2 border-stone-100 dark:border-stone-700 text-center font-bold text-stone-500 peer-checked:border-purple-500 peer-checked:text-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-stone-700 transition h-full flex flex-col justify-center items-center">
+                                <span class="text-2xl mb-1">📅</span>
+                                <span>Calendar</span>
+                            </div>
+
+                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-3 bg-stone-800 text-white text-xs rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 text-center">
+                                <div class="font-bold text-purple-400 mb-1">Strict Schedule</div>
+                                Deadline matches the calendar.<br>
+                                (e.g. Weekly = This Sunday)
+                                <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-8 border-transparent border-t-stone-800"></div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-stone-400 mb-1">Duration</label>
+                    <select name="timeframe" class="w-full border-2 border-stone-100 p-3 rounded-xl dark:bg-stone-900 dark:border-stone-700 font-bold focus:border-orange-400 outline-none bg-white dark:text-white dark:bg-stone-800 cursor-pointer">
+                        <option value="Weekly">Weekly</option>
+                        <option value="Monthly">Monthly</option>
+                        <option value="Yearly">Yearly</option>
+                    </select>
+                </div>
+
+                <div class="pt-2 flex justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-6 py-3 rounded-xl font-bold text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700 transition">Cancel</button>
+                    <button class="bg-stone-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-black shadow-lg hover:-translate-y-1 transition dark:bg-white dark:text-black">Place Stone</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
-        function toggleTheme() {
-            document.documentElement.classList.toggle('dark');
-            fetch("{{ url_for('toggle_theme') }}", { method: "POST" });
-        }
-        function openModal() { document.getElementById('goal-modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('goal-modal').classList.add('hidden'); }
+        function openModal() { document.getElementById('create-modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('create-modal').classList.add('hidden'); }
         
-        // Zen Mode Logic (Copy from previous if needed)
-        function enableZen(id) { document.getElementById(id).classList.add('zen-active'); }
-        function disableZen(e, id) { e.stopPropagation(); document.getElementById(id).classList.remove('zen-active'); }
+        function toggleDeadlineInput() {
+            const isCustom = document.querySelector('input[name="deadline_type"]:checked').value === 'custom';
+            if (isCustom) {
+                document.getElementById('preset-input').classList.add('hidden');
+                document.getElementById('custom-input').classList.remove('hidden');
+            } else {
+                document.getElementById('preset-input').classList.remove('hidden');
+                document.getElementById('custom-input').classList.add('hidden');
+            }
+        }
+
+        function toggleTheme() {
+            fetch('/toggle_theme', { method: 'POST' }).then(res => res.json()).then(data => {
+                document.documentElement.classList.toggle('dark', data.dark_mode);
+            });
+        }
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+            document.getElementById('mobile-menu').classList.toggle('flex');
+        }
+        {% if current_user.is_authenticated and current_user.is_dark_mode %}
+            document.documentElement.classList.add('dark');
+        {% endif %}
     </script>
 </body>
 </html>

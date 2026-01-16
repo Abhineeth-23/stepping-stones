@@ -1,212 +1,199 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    
-    <div class="md:col-span-1 flex flex-col gap-4">
+
+<div class="max-w-6xl mx-auto space-y-8 pb-20">
+
+    <div class="p-6 md:p-10 rounded-[2.5rem] shadow-xl border-4 relative overflow-hidden group transition-all
+        {{ 'bg-gradient-to-br from-green-50 to-emerald-100 border-white dark:from-stone-800 dark:to-stone-800 dark:border-green-900' if progress >= user.daily_target else 'bg-gradient-to-br from-orange-50 to-amber-100 border-white dark:from-stone-800 dark:to-stone-800 dark:border-orange-900/50' }}">
         
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700 flex flex-col">
-            <h2 class="text-lg font-bold mb-2 flex items-center justify-between dark:text-white">
-                <span>📓 Daily Journal</span>
-                <div class="flex gap-2">
-                    <a href="{{ url_for('journal_history') }}" class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300">📜 History</a>
-                    <button type="button" onclick="generatePrompt(event)" class="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded hover:bg-purple-200">✨ Prompt</button>
-                </div>
-            </h2>
-            
-            <form action="{{ url_for('update_global_journal') }}" method="POST" id="global-journal-container" class="flex-1 flex flex-col group" onclick="enableZen('global-journal-container')">
-                
-                <input type="text" name="title" 
-                       value="{{ daily_journal.title if daily_journal else (('🌴 Rest Day: ' + special_day_reason) if special_day_reason else today_date.strftime('%B %d, %Y')) }}" 
-                       class="mb-2 w-full bg-transparent font-bold border-b border-gray-200 dark:border-gray-700 focus:outline-none dark:text-gray-200 {{ 'text-purple-600 dark:text-purple-400' if special_day_reason else '' }}">
-                
-                <textarea id="journal-area" name="content" class="w-full h-40 border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 p-4 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all">{{ daily_journal.content if daily_journal else '' }}</textarea>
-                
-                <button class="mt-3 bg-gray-800 dark:bg-gray-600 text-white px-4 py-2 rounded w-full hover:bg-black">Save Entry</button>
-                
-                <div class="zen-overlay-btn absolute top-8 right-8 flex gap-3">
-                    <button type="button" onclick="generatePrompt(event)" class="bg-purple-100 text-purple-600 px-4 py-2 rounded-full font-bold shadow-lg hover:bg-purple-200 transition">✨ Prompt</button>
-                    <button type="button" onclick="disableZen(event, 'global-journal-container')" class="bg-white text-black px-6 py-2 rounded-full font-bold shadow-lg hover:bg-gray-200 transition">Done</button>
-                </div>
-            </form>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700 overflow-hidden">
-            <div class="flex justify-between items-end mb-4">
-                <h3 class="text-sm font-bold uppercase text-gray-400">Your Journey</h3>
-                <div class="flex gap-2 text-xs">
-                    <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-purple-400"></div> Rest</span>
-                    <span class="flex items-center gap-1"><div class="w-3 h-3 rounded-sm bg-orange-400"></div> Work</span>
-                </div>
-            </div>
-            
-            <div class="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-                <div id="heatmap-grid" class="flex gap-1 min-w-max"></div>
-            </div>
-
-            <div class="mt-2 text-right">
-                <a href="{{ url_for('calendar_view') }}" class="text-xs font-bold text-blue-500 hover:text-blue-600 dark:text-blue-400 hover:underline">View Full History 🗓️</a>
-            </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700">
-            <h3 class="text-sm font-bold uppercase text-gray-400 mb-3">📅 Plan a Special Day</h3>
-            <form action="{{ url_for('add_custom_date') }}" method="POST" class="flex flex-col gap-2">
-                <input type="date" name="date" class="border p-2 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:border-purple-500" required>
-                <input type="text" name="reason" placeholder="Reason (e.g. Birthday, Vacation)" class="border p-2 rounded text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:border-purple-500" required>
-                <button class="bg-purple-600 text-white py-2 rounded text-sm font-bold hover:bg-purple-700 shadow transition">Mark as Rest Day</button>
-            </form>
-        </div>
-        
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow border dark:border-gray-700">
-            <h3 class="text-sm font-bold uppercase text-gray-400 mb-3">💤 Weekly Rest Days</h3>
-            <form action="{{ url_for('set_rest_days') }}" method="POST" class="flex items-center justify-between">
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2 cursor-pointer dark:text-white text-sm">
-                        <input type="checkbox" name="rest_days" value="5" {% if user.rest_days and '5' in user.rest_days %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded"> <span>Sat</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer dark:text-white text-sm">
-                        <input type="checkbox" name="rest_days" value="6" {% if user.rest_days and '6' in user.rest_days %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded"> <span>Sun</span>
-                    </label>
-                </div>
-                <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs font-bold transition">Save</button>
-            </form>
-        </div>
-
-    </div>
-
-    <div class="md:col-span-2 space-y-6">
-        
-        <div class="p-6 rounded-lg shadow border-2 flex flex-col sm:flex-row justify-between items-center transition-colors {{ 'border-green-400 bg-green-50 dark:bg-green-900/20' if progress >= user.daily_target else 'border-orange-300 bg-white dark:bg-gray-800' }}">
-            <div>
-                <h2 class="text-3xl font-black dark:text-white flex items-center gap-2">
-                    {{ user.current_streak }} Day Streak 🔥
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-center md:text-left">
+                <h2 class="text-5xl md:text-7xl font-black dark:text-white flex flex-col md:flex-row items-center md:items-end gap-2 tracking-tighter leading-none">
+                    <span>{{ user.current_streak }}</span>
+                    <span class="text-xl md:text-2xl font-bold opacity-50 mb-1.5 uppercase tracking-widest">Days</span>
                 </h2>
-                <div class="flex flex-col gap-1 mt-1">
-                    <span class="text-gray-500 text-sm">Target: {{ user.daily_target }} steps/day</span>
-                    <span class="text-xs font-bold text-blue-500 bg-blue-100 dark:bg-blue-900/30 w-fit px-2 py-1 rounded flex items-center gap-1">
-                        🧊 {{ user.streak_freezes }} Freezes Left
+                
+                <div class="flex flex-wrap justify-center md:justify-start gap-2 mt-4">
+                    {% if user.streak_freezes > 0 %}
+                    <span class="text-blue-600 font-bold text-xs bg-white/60 dark:bg-blue-900/40 px-3 py-1.5 rounded-full shadow-sm border border-blue-100 dark:border-blue-800">
+                        ❄️ {{ user.streak_freezes }} Safe
+                    </span>
+                    {% endif %}
+                    <span class="text-stone-500 font-bold text-xs bg-white/60 dark:bg-stone-700 px-3 py-1.5 rounded-full shadow-sm border border-stone-100 dark:border-stone-600">
+                        Target: {{ user.daily_target }}
                     </span>
                 </div>
             </div>
-            <div class="text-right">
-                <div class="text-5xl font-black {{ 'text-green-600' if progress >= user.daily_target else 'text-orange-500' }}">{{ progress }} / {{ user.daily_target }}</div>
-                <div class="flex justify-end mt-2">
-                    <div class="flex items-center bg-gray-100 dark:bg-gray-700 rounded px-2 text-sm">
-                        <span class="text-xs text-gray-400 mr-2">Goal:</span>
-                        <a href="{{ url_for('adjust_target', action='decrease') }}" class="px-2 font-bold hover:text-red-500">-</a>
-                        <a href="{{ url_for('adjust_target', action='increase') }}" class="px-2 font-bold hover:text-green-500">+</a>
-                    </div>
+
+            <div class="text-center md:text-right">
+                <div class="text-6xl md:text-8xl font-black tracking-tighter transition-colors duration-500 {{ 'text-green-600' if progress >= user.daily_target else 'text-orange-500' }}">
+                    {{ progress }}<span class="text-4xl text-stone-300 dark:text-stone-600">/{{ user.daily_target }}</span>
+                </div>
+                <div class="inline-flex bg-white/50 dark:bg-stone-900/50 backdrop-blur rounded-full p-1 gap-1 mt-2">
+                    <a href="{{ url_for('adjust_target', action='decrease') }}" class="w-8 h-8 flex items-center justify-center hover:bg-white rounded-full font-bold text-stone-400 transition">-</a>
+                    <a href="{{ url_for('adjust_target', action='increase') }}" class="w-8 h-8 flex items-center justify-center hover:bg-white rounded-full font-bold text-stone-400 transition">+</a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+        <div class="flex items-center justify-between mb-4 px-2">
+            <h3 class="text-xl font-black text-stone-700 dark:text-white">Current Stones</h3>
+            <button onclick="openModal()" class="text-sm font-bold text-stone-400 hover:text-orange-500 transition">+ Add New</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {% for step in steps %}
-            <a href="{{ url_for('step_view', step_id=step.id) }}" class="block bg-white dark:bg-gray-800 p-6 rounded shadow hover:shadow-lg transition border-l-4 border-blue-500 dark:border-blue-400">
-                <div class="flex justify-between">
-                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ step.title }}</h3>
-                    <span class="text-[10px] bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded h-fit">{{ step.timeframe }}</span>
+            <a href="{{ url_for('step_view', step_id=step.id) }}" class="group relative flex flex-col justify-between bg-white dark:bg-stone-800 p-6 rounded-[2rem] shadow-lg shadow-stone-200/50 dark:shadow-none border-2 border-white dark:border-stone-700 hover:border-orange-300 dark:hover:border-orange-500 transition-all hover:-translate-y-1">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-[10px] font-black uppercase text-stone-400">{{ step.category }}</span>
+                    <span class="text-[10px] bg-stone-100 dark:bg-stone-700 text-stone-500 px-2 py-1 rounded-full font-bold">{{ step.timeframe }}</span>
                 </div>
-                <p class="text-gray-400 text-xs mt-2">{{ step.category }}</p>
+                <h3 class="text-xl font-bold text-stone-800 dark:text-stone-100 mb-6 leading-tight">{{ step.title }}</h3>
+                <div class="w-full bg-stone-100 dark:bg-stone-900 h-1.5 rounded-full overflow-hidden">
+                    <div class="h-full bg-orange-400 w-1/3 group-hover:w-1/2 transition-all duration-700 rounded-full"></div>
+                </div>
             </a>
             {% endfor %}
-            <button onclick="openModal()" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded flex items-center justify-center p-6 text-gray-400 hover:text-blue-500 hover:border-blue-500 transition">
-                + Create New Goal
+            <button onclick="openModal()" class="min-h-[180px] border-4 border-dashed border-stone-200 dark:border-stone-700 rounded-[2rem] flex flex-col items-center justify-center p-6 text-stone-400 hover:text-orange-500 hover:border-orange-300 hover:bg-orange-50 dark:hover:bg-stone-800/50 transition group">
+                <span class="text-4xl mb-2 group-hover:scale-110 transition">🧱</span>
+                <span class="font-bold">Lay New Stone</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <div class="bg-white dark:bg-stone-800 p-6 md:p-8 rounded-[2.5rem] shadow-xl shadow-stone-200 dark:shadow-none border-2 border-white dark:border-stone-700 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-purple-400 to-indigo-400"></div>
+            
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-black dark:text-white flex items-center gap-2">📓 Daily Journal</h2>
+                <a href="{{ url_for('journal_history') }}" class="text-xs bg-stone-100 text-stone-500 px-3 py-1.5 rounded-xl hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 transition font-bold">📜 History</a>
+            </div>
+            
+            <form action="{{ url_for('update_global_journal') }}" method="POST" id="global-journal-container" class="flex flex-col h-full" onclick="enableZen('global-journal-container')">
+                <input type="text" name="title" 
+                       value="{{ daily_journal.title if daily_journal else (('🌴 Rest Day: ' + special_day_reason) if special_day_reason else today_date.strftime('%B %d, %Y')) }}" 
+                       class="mb-3 w-full bg-transparent font-black text-xl border-none focus:ring-0 p-0 dark:text-stone-200 {{ 'text-purple-500' if special_day_reason else 'text-stone-700' }}">
+                
+                <textarea id="journal-area" name="content" placeholder="Write your thoughts..." class="flex-1 min-h-[150px] w-full bg-stone-50 dark:bg-stone-900/50 rounded-2xl p-4 text-stone-600 dark:text-stone-300 resize-none focus:outline-none focus:ring-2 focus:ring-purple-200 transition-all leading-relaxed text-base">{{ daily_journal.content if daily_journal else '' }}</textarea>
+                
+                <button class="mt-4 bg-stone-800 dark:bg-stone-600 text-white py-3 rounded-xl font-bold w-full hover:bg-black hover:-translate-y-1 transition shadow-lg">Save Entry</button>
+                
+                <div id="zen-buttons" class="hidden absolute top-8 right-8 gap-3">
+                    <button type="button" onclick="generatePrompt(event)" class="bg-purple-100 text-purple-600 px-5 py-2 rounded-full font-bold shadow-lg hover:bg-purple-200">✨ New Prompt</button>
+                    <button type="button" onclick="disableZen(event, 'global-journal-container')" class="bg-stone-800 text-white px-6 py-2 rounded-full font-bold shadow-lg hover:scale-105 transition">Done</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="flex flex-col gap-4">
+            <div class="bg-white dark:bg-stone-800 p-6 md:p-8 rounded-[2.5rem] shadow-xl shadow-stone-200 dark:shadow-none border-2 border-white dark:border-stone-700">
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-stone-400">My Path</h3>
+                    <div class="flex gap-2 text-[10px] font-bold text-stone-400">
+                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-purple-400"></div> Rest</span>
+                        <span class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-orange-500"></div> Work</span>
+                    </div>
+                </div>
+                <div class="overflow-x-auto pb-2 scrollbar-hide">
+                    <div id="heatmap-grid" class="flex gap-1.5 min-w-max"></div>
+                </div>
+            </div>
+
+            <button onclick="openRestDayModal()" class="w-full bg-purple-50 dark:bg-purple-900/20 p-5 rounded-[2rem] border-2 border-purple-100 dark:border-purple-800/30 flex items-center justify-between group hover:bg-purple-100 transition">
+                <div class="text-left">
+                    <h3 class="font-bold text-purple-800 dark:text-purple-300">Plan a Rest Day</h3>
+                    <p class="text-xs text-purple-400">Mark holidays & birthdays.</p>
+                </div>
+                <span class="text-2xl">📅</span>
             </button>
         </div>
     </div>
 </div>
 
-<script>
-    // --- 1. PROMPT GENERATOR ---
-    const prompts = [
-        "What was the hardest part of today?",
-        "What is one thing you learned today?",
-        "What are 3 things you are grateful for?",
-        "If you could redo one moment today, what would it be?",
-        "How did you move closer to your goals today?",
-        "What distracted you the most today?",
-        "Describe your current mood in one word."
-    ];
+<div id="rest-day-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-stone-900/60 backdrop-blur-sm px-4">
+    <div class="bg-white dark:bg-stone-800 p-8 rounded-3xl shadow-2xl w-full max-w-md border-4 border-white dark:border-stone-700">
+        <h2 class="text-2xl font-black mb-1 dark:text-white">Plan a Special Day</h2>
+        <form action="{{ url_for('add_custom_date') }}" method="POST" class="space-y-4 mt-4">
+            <input type="date" name="date" class="w-full border-2 border-stone-100 p-3 rounded-xl dark:bg-stone-900 dark:border-stone-700 font-bold dark:text-white" required>
+            <input type="text" name="reason" placeholder="Reason (e.g. Birthday)" class="w-full border-2 border-stone-100 p-3 rounded-xl dark:bg-stone-900 dark:border-stone-700 font-bold dark:text-white" required>
+            <div class="pt-4 flex justify-end gap-3">
+                <button type="button" onclick="closeRestDayModal()" class="px-6 py-3 rounded-xl font-bold text-stone-500 hover:bg-stone-100 transition">Cancel</button>
+                <button class="bg-purple-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-purple-700 shadow-lg">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    function generatePrompt(event) {
-        if(event) event.stopPropagation(); 
-        const randomIndex = Math.floor(Math.random() * prompts.length);
-        const area = document.getElementById('journal-area');
-        area.value = "✨ " + prompts[randomIndex] + "\n\n" + area.value;
-        area.focus();
-        area.setSelectionRange(0, 0); 
+<script>
+    function openRestDayModal() { document.getElementById('rest-day-modal').classList.remove('hidden'); }
+    function closeRestDayModal() { document.getElementById('rest-day-modal').classList.add('hidden'); }
+    
+    // ZEN MODE LOGIC UPDATE
+    function enableZen(id) { 
+        document.getElementById(id).classList.add('zen-active'); 
+        document.body.classList.add('zen-open');
+        // Un-hide the buttons when Zen is active
+        document.getElementById('zen-buttons').classList.remove('hidden');
+        document.getElementById('zen-buttons').classList.add('flex');
+    }
+    
+    function disableZen(e, id) { 
+        e.stopPropagation(); 
+        document.getElementById(id).classList.remove('zen-active'); 
+        document.body.classList.remove('zen-open');
+        // Hide buttons again
+        document.getElementById('zen-buttons').classList.add('hidden');
+        document.getElementById('zen-buttons').classList.remove('flex');
     }
 
-    // --- 2. DYNAMIC HEATMAP GENERATOR (UPDATED FOR REST DAYS) ---
+    const prompts = ["What was the hardest part of today?", "One thing you learned?", "3 things you are grateful for?", "Describe your mood in one word."];
+    function generatePrompt(e) { if(e) e.stopPropagation(); document.getElementById('journal-area').value = "✨ " + prompts[Math.floor(Math.random() * prompts.length)] + "\n\n" + document.getElementById('journal-area').value; }
+
+    // HEATMAP (Same logic as before)
     document.addEventListener("DOMContentLoaded", function() {
         const heatmapData = {{ heatmap_data|tojson }};
-        const restDaysMap = {{ custom_rest_days|tojson }}; // Passed from Flask
+        const restDaysMap = {{ custom_rest_days|tojson }}; 
         const signupDateStr = "{{ user_created_at }}";
-        
         const container = document.getElementById('heatmap-grid');
         
         let startDate = new Date(signupDateStr);
         let today = new Date();
-        
-        // Reset to 1st of signup month
-        startDate.setDate(1);
-        startDate.setHours(0,0,0,0);
-        today.setHours(0,0,0,0);
-        
-        const dayOfWeek = startDate.getDay(); 
-        startDate.setDate(startDate.getDate() - dayOfWeek);
+        startDate.setDate(1); startDate.setHours(0,0,0,0); today.setHours(0,0,0,0);
+        startDate.setDate(startDate.getDate() - startDate.getDay());
         
         let currentDate = new Date(startDate);
-        
         while (currentDate <= today) {
             const weekCol = document.createElement('div');
-            weekCol.className = "flex flex-col gap-1";
-            
+            weekCol.className = "flex flex-col gap-1.5";
             for (let i = 0; i < 7; i++) {
                 const dateStr = currentDate.toISOString().split('T')[0];
-                const displayDate = currentDate.toDateString(); 
-                
                 const cell = document.createElement('div');
-                cell.className = "w-3 h-3 rounded-sm transition-colors duration-200 border border-transparent hover:border-gray-400 cursor-pointer";
+                cell.className = "w-3 h-3 rounded-full border border-transparent hover:scale-125 cursor-pointer transition-all";
                 
                 const count = heatmapData[dateStr] || 0;
                 const restReason = restDaysMap[dateStr];
-
-                // --- COLOR LOGIC ---
+                
                 if (count > 0) {
-                    // Activity overrides Rest Day (Orange)
-                    cell.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'dark:border-gray-600');
-                    if (count == 1) cell.classList.add('bg-orange-200');
-                    else if (count <= 3) cell.classList.add('bg-orange-400');
-                    else cell.classList.add('bg-orange-600');
-                    
-                    cell.title = `${displayDate}: ${count} logs` + (restReason ? ` (Worked on ${restReason}!)` : "");
-                } 
-                else if (restReason) {
-                    // Rest Day with No Activity (Purple)
-                    cell.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'dark:border-gray-600');
-                    cell.classList.add('bg-purple-400');
-                    cell.title = `🌴 ${restReason} (${displayDate})`;
+                    if (count == 1) cell.className += " bg-orange-200";
+                    else if (count <= 3) cell.className += " bg-orange-400 shadow-sm shadow-orange-200";
+                    else cell.className += " bg-orange-600 shadow-md shadow-orange-300";
+                    cell.title = `${dateStr}: ${count} steps`;
+                } else if (restReason) {
+                    cell.className += " bg-purple-400 shadow-sm shadow-purple-200";
+                    cell.title = restReason;
+                } else {
+                    cell.className += " bg-stone-200 dark:bg-stone-700";
                 }
-                else {
-                    // Empty Day (Gray)
-                    cell.classList.add('bg-gray-100', 'dark:bg-gray-700', 'dark:border-gray-600');
-                    cell.title = `${displayDate}: No activity`;
-                }
-
                 weekCol.appendChild(cell);
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             container.appendChild(weekCol);
         }
-        
-        if(container.parentElement) {
-            container.parentElement.scrollLeft = container.parentElement.scrollWidth;
-        }
+        if(container.parentElement) container.parentElement.scrollLeft = container.parentElement.scrollWidth;
     });
-
-    function enableZen(id) { document.getElementById(id).classList.add('zen-active'); }
-    function disableZen(e, id) { e.stopPropagation(); document.getElementById(id).classList.remove('zen-active'); }
 </script>
 {% endblock %}
