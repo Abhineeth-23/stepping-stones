@@ -8,6 +8,14 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 
+    <style>
+        html.lenis, html.lenis body { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto !important; }
+        .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+        .lenis.lenis-stopped { overflow: hidden; }
+        .lenis.lenis-scrolling iframe { pointer-events: none; }
+    </style>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -22,7 +30,7 @@
         }
     </script>
     <style>
-        html { scroll-behavior: smooth; }
+        /* Note: We removed 'html { scroll-behavior: smooth; }' because Lenis handles it now! */
         
         /* ZEN MODE LOGIC */
         .zen-active {
@@ -60,9 +68,7 @@
                 
                 <button onclick="toggleTheme()" class="p-2 rounded-full hover:bg-stone-200 dark:hover:bg-stone-700 transition">🌗</button>
                 
-                <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700">
-                    ☰
-                </button>
+                <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-lg text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700">☰</button>
 
                 {% if current_user.is_authenticated %}
                     <a href="{{ url_for('profile') }}" class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs hover:ring-2 ring-orange-400 transition">
@@ -85,7 +91,8 @@
         </div>
     </nav>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
+    <div class="max-w-5xl mx-auto p-4 md:p-6 mt-4 min-h-screen">
+        {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div id="flash-messages" class="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-full max-w-md px-4 transition-opacity duration-500">
             {% for category, message in messages %}
@@ -101,13 +108,15 @@
         {% endif %}
         {% endwith %}
 
+        {% block content %}{% endblock %}
+    </div>
+
     <div id="create-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-stone-900/60 backdrop-blur-sm px-4">
         <div class="bg-white dark:bg-stone-800 p-8 rounded-3xl shadow-2xl w-full max-w-lg border-4 border-white dark:border-stone-700 transition-all transform scale-100">
             <h2 class="text-2xl font-black mb-1 dark:text-white">Lay a New Stone</h2>
             <p class="text-stone-400 text-sm mb-6">Define a new goal to step towards.</p>
             
             <form action="{{ url_for('create_step') }}" method="POST" class="space-y-6">
-                
                 <div class="space-y-3">
                     <div>
                         <label class="block text-xs font-bold uppercase text-stone-400 mb-1">Goal Title</label>
@@ -118,43 +127,31 @@
                         <input type="text" name="category" placeholder="e.g. Career, Health" class="w-full border-2 border-stone-100 p-3 rounded-xl dark:bg-stone-900 dark:border-stone-700 font-bold focus:border-orange-400 outline-none dark:text-white">
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-xs font-bold uppercase text-stone-400 mb-2">Deadline Mode</label>
                     <div class="grid grid-cols-2 gap-4">
-                        
                         <label class="relative group cursor-pointer">
                             <input type="radio" name="deadline_mode" value="rolling" checked class="peer hidden">
                             <div class="p-4 rounded-xl border-2 border-stone-100 dark:border-stone-700 text-center font-bold text-stone-500 peer-checked:border-orange-500 peer-checked:text-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-stone-700 transition h-full flex flex-col justify-center items-center">
-                                <span class="text-2xl mb-1">🔄</span>
-                                <span>Rolling</span>
+                                <span class="text-2xl mb-1">🔄</span><span>Rolling</span>
                             </div>
-                            
                             <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-3 bg-stone-800 text-white text-xs rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 text-center">
-                                <div class="font-bold text-orange-400 mb-1">Relative Time</div>
-                                Deadline is calculated from <em>today</em>.<br>
-                                (e.g. Weekly = 7 days from now)
+                                <div class="font-bold text-orange-400 mb-1">Relative Time</div>Deadline is calculated from <em>today</em>.
                                 <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-8 border-transparent border-t-stone-800"></div>
                             </div>
                         </label>
-
                         <label class="relative group cursor-pointer">
                             <input type="radio" name="deadline_mode" value="calendar" class="peer hidden">
                             <div class="p-4 rounded-xl border-2 border-stone-100 dark:border-stone-700 text-center font-bold text-stone-500 peer-checked:border-purple-500 peer-checked:text-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-stone-700 transition h-full flex flex-col justify-center items-center">
-                                <span class="text-2xl mb-1">📅</span>
-                                <span>Calendar</span>
+                                <span class="text-2xl mb-1">📅</span><span>Calendar</span>
                             </div>
-
                             <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 p-3 bg-stone-800 text-white text-xs rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition pointer-events-none z-10 text-center">
-                                <div class="font-bold text-purple-400 mb-1">Strict Schedule</div>
-                                Deadline matches the calendar.<br>
-                                (e.g. Weekly = This Sunday)
+                                <div class="font-bold text-purple-400 mb-1">Strict Schedule</div>Deadline matches the calendar.
                                 <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-8 border-transparent border-t-stone-800"></div>
                             </div>
                         </label>
                     </div>
                 </div>
-
                 <div>
                     <label class="block text-xs font-bold uppercase text-stone-400 mb-1">Duration</label>
                     <select name="timeframe" class="w-full border-2 border-stone-100 p-3 rounded-xl dark:bg-stone-900 dark:border-stone-700 font-bold focus:border-orange-400 outline-none bg-white dark:text-white dark:bg-stone-800 cursor-pointer">
@@ -163,7 +160,6 @@
                         <option value="Yearly">Yearly</option>
                     </select>
                 </div>
-
                 <div class="pt-2 flex justify-end gap-3">
                     <button type="button" onclick="closeModal()" class="px-6 py-3 rounded-xl font-bold text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-700 transition">Cancel</button>
                     <button class="bg-stone-800 text-white px-8 py-3 rounded-xl font-bold hover:bg-black shadow-lg hover:-translate-y-1 transition dark:bg-white dark:text-black">Place Stone</button>
@@ -172,21 +168,30 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
+
     <script>
+        // --- 3. INITIALIZE LENIS ---
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Luxurious ease
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
+        })
+
+        function raf(time) {
+            lenis.raf(time)
+            requestAnimationFrame(raf)
+        }
+        requestAnimationFrame(raf)
+
+        // Existing Scripts
         function openModal() { document.getElementById('create-modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('create-modal').classList.add('hidden'); }
-        
-        function toggleDeadlineInput() {
-            const isCustom = document.querySelector('input[name="deadline_type"]:checked').value === 'custom';
-            if (isCustom) {
-                document.getElementById('preset-input').classList.add('hidden');
-                document.getElementById('custom-input').classList.remove('hidden');
-            } else {
-                document.getElementById('preset-input').classList.remove('hidden');
-                document.getElementById('custom-input').classList.add('hidden');
-            }
-        }
-
         function toggleTheme() {
             fetch('/toggle_theme', { method: 'POST' }).then(res => res.json()).then(data => {
                 document.documentElement.classList.toggle('dark', data.dark_mode);
@@ -199,6 +204,17 @@
         {% if current_user.is_authenticated and current_user.is_dark_mode %}
             document.documentElement.classList.add('dark');
         {% endif %}
+
+        // AUTO-DISMISS FLASH MESSAGES
+        document.addEventListener("DOMContentLoaded", function() {
+            const flashContainer = document.getElementById('flash-messages');
+            if (flashContainer) {
+                setTimeout(() => {
+                    flashContainer.style.opacity = '0';
+                    setTimeout(() => { flashContainer.remove(); }, 500);
+                }, 3500);
+            }
+        });
     </script>
 </body>
 </html>
