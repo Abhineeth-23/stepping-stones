@@ -15,7 +15,7 @@ class User(UserMixin, db.Model):
     dob = db.Column(db.Date, nullable=True)
     # ------------------
     
-    password = db.Column(db.String(150), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     is_dark_mode = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
