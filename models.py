@@ -2,6 +2,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
 import uuid
+from datetime import datetime, date
+
 
 db = SQLAlchemy()
 
@@ -59,7 +61,7 @@ class CustomRestDay(db.Model):
 class StepLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.Text, nullable=False)
-    date = db.Column(db.Date, default=datetime.utcnow, nullable=False)
+    date = db.Column(db.Date, default=date.today, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     step_id = db.Column(db.Integer, db.ForeignKey('step.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -68,7 +70,7 @@ class GlobalJournal(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=True)
     content = db.Column(db.Text, nullable=False)
-    date = db.Column(db.Date, default=datetime.utcnow, nullable=False)
+    date = db.Column(db.Date, default=date.today, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 

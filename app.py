@@ -7,6 +7,8 @@ from datetime import datetime, date, timedelta
 import calendar
 import uuid
 import os
+from datetime import datetime, date
+
 
 app = Flask(__name__)
 
@@ -64,9 +66,16 @@ def get_heatmap_data(user):
     """
     Fetches all logs for the user to populate the GitHub-style heatmap.
     """
-    logs = db.session.query(StepLog.date, db.func.count(StepLog.id))\
-        .filter(StepLog.user_id == user.id)\
-        .group_by(StepLog.date).all()
+    logs = (
+        db.session.query(
+            StepLog.date,
+            db.func.count(db.distinct(StepLog.step_id))
+        )
+        .filter(StepLog.user_id == user.id)
+        .group_by(StepLog.date)
+        .all()
+    )
+
         
     data = {}
     for log_date, count in logs:
@@ -142,7 +151,12 @@ def update_streak_status(user):
                 flash("Streak reset! No freezes left.", "error")
 
     # Calculate Today's Progress
-    todays_count = StepLog.query.filter_by(user_id=user.id, date=today).group_by(StepLog.step_id).count()
+    todays_count = (
+        db.session.query(db.func.count(db.distinct(StepLog.step_id)))
+        .filter(StepLog.user_id == user.id, StepLog.date == today)
+        .scalar()
+    )
+
     
     if todays_count >= user.daily_target:
         # Only increment if we haven't already done it today
@@ -164,10 +178,15 @@ def dashboard():
     if current_user.last_streak_date != date.today():
         progress = update_streak_status(current_user)
     else:
-        progress = StepLog.query.filter_by(
-            user_id=current_user.id,
-            date=date.today()
-        ).count()
+        progress = (
+            db.session.query(db.func.count(db.distinct(StepLog.step_id)))
+            .filter(
+                StepLog.user_id == current_user.id,
+                StepLog.date == date.today()
+            )
+            .scalar()
+        )
+
 
     
     steps = Step.query.filter_by(user_id=current_user.id, is_active=True).limit(4).all()
