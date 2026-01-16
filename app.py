@@ -316,6 +316,8 @@ def about():
 @app.route('/steps')
 @login_required
 def all_steps():
+    today = date.today()
+
     filter_type = request.args.get('filter', 'active')
     sort_by = request.args.get('sort', 'newest')
     
@@ -336,7 +338,12 @@ def all_steps():
         query = query.order_by(Step.created_at.desc())
         
     steps = query.all()
-    return render_template('steps_list.html', steps=steps, filter_type=filter_type)
+    return render_template(
+        'steps_list.html',
+        steps=steps,
+        filter_type=filter_type,
+        today=today
+    )
 
 @app.route('/create_step', methods=['POST'])
 @login_required
@@ -379,6 +386,9 @@ def step_view(step_id):
         return redirect(url_for('dashboard'))
 
     today = date.today()
+    days_remaining = None
+    if step.deadline_date:
+        days_remaining = (step.deadline_date - today).days
     todays_log = StepLog.query.filter_by(step_id=step.id, date=today).first()
 
     if request.method == 'POST':
@@ -400,7 +410,13 @@ def step_view(step_id):
         return redirect(url_for('step_view', step_id=step.id))
 
     history = StepLog.query.filter_by(step_id=step.id).order_by(StepLog.date.desc()).all()
-    return render_template('step_view.html', step=step, todays_log=todays_log, history=history)
+    return render_template(
+        'step_view.html',
+        step=step,
+        todays_log=todays_log,
+        history=history,
+        days_remaining=days_remaining
+    )
 
 @app.route('/step/edit/<int:step_id>', methods=['POST'])
 @login_required

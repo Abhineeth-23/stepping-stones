@@ -22,7 +22,10 @@
         
         <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">{{ step.title }}</h3>
         
-        {% set days_remaining = (step.deadline_date - date.today()).days %}
+        {% if step.deadline_date %}
+            {{ (step.deadline_date - today).days }} days remaining
+        {% endif %}
+
         
         <div class="flex items-center gap-2 text-sm border-t dark:border-gray-700 pt-3">
             <span class="text-xl">⏳</span>
