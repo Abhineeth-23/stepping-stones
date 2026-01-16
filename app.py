@@ -9,37 +9,31 @@ import uuid
 import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'stepping_stones_secret_key'
+
+# ---------------- BASIC CONFIG ----------------
+app.config['SECRET_KEY'] = os.environ.get(
+    'SECRET_KEY', 'dev-only-secret-key'
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-db.init_app(app)
-login_manager = LoginManager()
-login_manager.login_view = 'login'
-login_manager.init_app(app)
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-@app.context_processor
-def inject_today():
-    return {'date': date}
-
-# ----------------- DATABASE SWITCHER -----------------
-# 1. Try to get the database URL from the Cloud Environment (Render)
+# ---------------- DATABASE SWITCHER ----------------
 database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # 2. If we are on the cloud, use Neon (Postgres)
-    # (Fix: Render uses 'postgres://' but SQLAlchemy needs 'postgresql://')
     if database_url.startswith("postgres://"):
-        database_url = database_url.replace("postgres://", "postgresql://", 1)
+        database_url = database_url.replace(
+            "postgres://", "postgresql://", 1
+        )
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-    # 3. If no cloud URL is found, fallback to local SQLite (Your Laptop)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# ---------------- INIT EXTENSIONS ----------------
+db.init_app(app)
+
+login_manager = LoginManager()
+login_manager.login_view = 'login'
+login_manager.init_app(app)
 
 # ==========================================
 #              HELPER FUNCTIONS
@@ -163,7 +157,14 @@ def update_streak_status(user):
 @login_required
 def dashboard():
     today = date.today()
-    progress = update_streak_status(current_user)
+    if current_user.last_streak_date != date.today():
+        progress = update_streak_status(current_user)
+    else:
+        progress = StepLog.query.filter_by(
+            user_id=current_user.id,
+            date=date.today()
+        ).count()
+
     
     steps = Step.query.filter_by(user_id=current_user.id, is_active=True).limit(4).all()
     daily_journal = GlobalJournal.query.filter_by(user_id=current_user.id, date=today).first()
@@ -699,8 +700,10 @@ def logout():
 #              MAIN EXECUTION
 # ==========================================
 
-with app.app_context():
-    db.create_all()
+if os.environ.get("RENDER"):
+    with app.app_context():
+        db.create_all()
+
 
 if __name__ == '__main__':
     app.run(debug=True)
