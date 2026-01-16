@@ -73,7 +73,8 @@
                 {% if current_user.is_authenticated %}
                 <div class="relative">
                     <button onclick="toggleUserMenu()"
-                        class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs hover:ring-2 ring-orange-400 transition">
+                    class="user-menu-trigger w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs hover:ring-2 ring-orange-400 transition">
+
                         {{ current_user.username[0] | upper }}
                     </button>
 
@@ -227,15 +228,19 @@
         {% endif %}
 
         // AUTO-DISMISS FLASH MESSAGES
-        document.addEventListener("DOMContentLoaded", function() {
-            const flashContainer = document.getElementById('flash-messages');
-            if (flashContainer) {
-                setTimeout(() => {
-                    flashContainer.style.opacity = '0';
-                    setTimeout(() => { flashContainer.remove(); }, 500);
-                }, 3500);
+        document.addEventListener('click', function (e) {
+            const menu = document.getElementById('user-menu');
+            if (!menu) return;
+
+            // Close only if click is outside menu AND outside avatar button
+            if (
+                !e.target.closest('#user-menu') &&
+                !e.target.closest('.user-menu-trigger')
+            ) {
+                menu.classList.add('hidden');
             }
         });
+
     </script>
 </body>
 </html>
