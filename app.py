@@ -6,6 +6,7 @@ from models import db, User, Step, StepLog, GlobalJournal, SubTask, CustomRestDa
 from datetime import datetime, date, timedelta
 import calendar
 import uuid
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'stepping_stones_secret_key'
@@ -698,7 +699,8 @@ def logout():
 #              MAIN EXECUTION
 # ==========================================
 
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
